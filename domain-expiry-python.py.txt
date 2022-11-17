@@ -1,0 +1,9 @@
+import whois
+from datetime import datetime, time
+w = whois.whois('saqlainmushtaq.com')
+expirytimestamp = w.expiration_date[0].timestamp()
+now = datetime.now()
+timestamp = datetime.timestamp(now)
+diff = expirytimestamp - timestamp
+daysleft = diff/86400
+print (daysleft)

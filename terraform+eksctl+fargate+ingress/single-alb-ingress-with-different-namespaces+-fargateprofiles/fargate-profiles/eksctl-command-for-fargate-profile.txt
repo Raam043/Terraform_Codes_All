@@ -1,0 +1,6 @@
+eksctl get fargateprofile --cluster cloudgeeks-ca-eks
+
+eksctl create fargateprofile -f 1-fargate-profiles.yaml
+
+eksctl delete fargateprofile --cluster cloudgeeks-ca-eks --name cloudgeeks-app2 --wait
+

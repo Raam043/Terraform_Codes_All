@@ -1,0 +1,75 @@
+#!/bin/bash
+# Purpose: Kafka Cluster In Kubernetes
+# Maintainer DevOps <Muhammad Asim <quickbooks2018@gmail.com>
+
+# Kubectl Installation
+curl -# -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x ./kubectl
+mv ./kubectl /usr/local/bin/kubectl
+kubectl version --client
+
+# Helm Installation
+# https://helm.sh/docs/intro/install/
+
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+cp /usr/local/bin/helm /usr/bin/helm
+rm -f get_helm.sh
+helm version
+
+# Kind Installation
+ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-amd64
+
+# Latest Version
+# ###########################################################################
+# curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-amd64"
+#############################################################################
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
+chmod +x ./kind
+mv ./kind /usr/local/bin
+
+# Cluster Creation
+
+ kind create cluster --name cloudgeeks-ca --image kindest/node:v1.19.0
+
+
+ kubectl cluster-info
+ 
+ 
+###################
+# Create Deployment
+###################
+# kubectl create deployment <Deplyment-Name> --image=<Container-Image>
+# kubectl create deployment blue-deployment --image=quickbooks2018/blue
+
+######################
+# Scaling a Deployment
+######################
+# kubectl scale --replicas=3 deployment/<Deployment-Name>
+# kubectl scale --replicas=3 deployment/blue-deployment
+
+#################################
+# Expose Deployment as a Service
+#################################
+# kubectl expose deployment <Deployment-Name>  --type=NodePort --port=80 --target-port=80 --name=<Service-Name-To-Be-Created>
+# kubectl expose deployment blue-deployment --type=NodePort --port=80 --target-port=80 --name=blue-service
+
+###############
+# Port Forward
+###############
+# kubectl port-forward service/blue-service --address 0.0.0.0 11000:80 -n default
+
+#END
+
+# kind create cluster --config hack/kind-config.yaml --image=kindest/node:v1.17.2
+cat << EOF > kind-config.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  apiServerAddress: "0.0.0.0"
+  apiServerPort: 7443
+EOF  
+  
+ 

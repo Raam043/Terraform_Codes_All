@@ -1,0 +1,50 @@
+# https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/17.21.0/submodules/node_groups
+
+What is the difference between node_groups and worker_groups?
+node_groups are AWS-managed node groups (configures "Node Groups" that you can find on the EKS dashboard). This system is supposed to ease some of the lifecycle around upgrading nodes. Although they do not do this automatically and you still need to manually trigger the updates.
+
+worker_groups are self-managed nodes (provisions a typical "Autoscaling group" on EC2). It gives you full control over nodes in the cluster like using custom AMI for the nodes. As AWS says, "with worker groups the customer controls the data plane & AWS controls the control plane".
+
+# https://github.com/terraform-aws-modules/terraform-aws-eks/issues/1109
+
+node_groups = {
+  example = {
+    name             = "${var.cluster_name}-example"
+    subnets          = [module.vpc.private_subnets[2]]
+    desired_capacity = 1
+    max_capacity     = 1
+    min_capacity     = 1
+
+    launch_template_id      = aws_launch_template.example.id
+    instance_type           = aws_launch_template.example.instance_type
+    launch_template_version = aws_launch_template.example.default_version
+
+    additional_tags = {
+      NodeRole = "storage"
+      az       = "eu-central-1c"
+    }
+  }
+}
+
+
+# https://github.com/terraform-aws-modules/terraform-aws-eks/issues/1214
+
+ node_groups = {
+    prometheus = {
+      create_launch_template = true
+
+      desired_capacity   = 1
+      max_capacity       = 2
+      min_capacity       = 1
+      instance_types     = ["c5.xlarge", "c4.xlarge"]
+      capacity_type      = "SPOT"
+      disk_type          = "gp2"
+      disk_size          = 20
+      kubelet_extra_args = "--register-with-taints=dedicated=prometheus:NoSchedule"
+      additional_tags    = var.prometheus_mng_additional_tags
+      k8s_labels         = {
+        "role" = "worker"
+        "group" = "prometheus"
+      }
+    }
+  }

@@ -1,0 +1,32 @@
+#!/bin/bash
+# Purpose: Check the System Health, CPU Utilization & take actions accordingly
+# Maintainer: Muhammad Asim@cloudgeeks.ca.com
+
+
+# nproc command basically displays in output the number of available processing units
+cores=`nproc`
+
+# Last 15 min Load avarage on System
+
+load=`awk '{print $3}'< /proc/loadavg`
+
+echo " "
+
+# Relative Load on System
+
+# The correlation between Relative CPU utilization (x-axis) and Absolute CPU utilization (y-axis)
+
+echo | awk -v c="${cores}" -v l="${load}" '{print "Relative load on EC2 instance is " l*100/c "%"}'
+
+
+# Actions
+
+usage=$(echo | awk -v c="${cores}" -v l="${load}" '{print l*100/c}' | awk -F. '{print $1}')
+if [[ ${usage} -ge 80 ]]; then
+
+    echo -e "\ncloudgeeks.ca Internal Infra is restarting\n"
+
+    shutdown -r now
+fi
+
+# END

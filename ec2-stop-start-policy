@@ -1,0 +1,41 @@
+https://protechgurus.com/allow-iam-user-start-stop-reboot-ec2-instances/
+
+
+{
+ "Version": "2012-10-17",
+ "Statement": [
+   {
+    "Effect": "Allow",
+    "Action": [
+     "ec2:DescribeInstances",
+     "ec2:DescribeInstanceStatus",
+     "ec2:DescribeTags"
+    ],
+   "Resource": "*"
+   },
+    {
+    "Effect": "Allow",
+    "Action": [
+     "ec2:StartInstances",
+     "ec2:StopInstances",
+     "ec2:RebootInstances"
+    ],
+   "Resource": "arn:aws:ec2:us-east-1:YOURAWSA/C:instance/INSTANCEID",
+               "arn:aws:ec2:us-east-1:YOURAWSA/C:instance/INSTANCEID"
+                
+   }
+  ]
+}
+
+
+
+
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesStopping.html
+
+aws ec2 stop-instances --instance-ids i-0123ab456c789d01e --force
+
+aws ec2 start-instances --instance-ids i-0123ab456c789d01e --force
+
+aws ec2 stop-instances --instance-ids i-0123ab456c789d01e
+
+aws ec2 start-instances --instance-ids i-0123ab456c789d01e

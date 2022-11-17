@@ -1,0 +1,44 @@
+Case-1 ---> AMI Created with this, attach your choice .pem file 
+https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ec2launch.html
+
+###WINDOWS UPDATE IS MUST###
+###WINDOWS UPDATE IS MUST###
+###WINDOWS UPDATE IS MUST###
+than
+do
+
+#Note Before taking a Golden AMI run the mentioned below AWS commands on Windows EC2 instances.
+<Advantage:---> if you copy your AMI to other AWS Regions, you can attach new EC2 key Pairs to it.>
+
+"C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\SendWindowsIsReady.ps1 -Schedule"
+"C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\InitializeInstance.ps1 -Schedule",
+"C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\SysprepInstance.ps1" ---> Instance will Shutdown
+
+
+
+###"C:\ProgramData\Amazon\EC2-Windows\Launch\Scripts\SysprepInstance.ps1 -NoShutdown"### ---> Instance keep running
+
+You are logged off the instance and the instance shuts down. If you check the Instances page in the Amazon EC2 console, the instance state changes from running to stopping, and then to stopped. At this point, it is safe to create an AMI from this instance.
+
+
+
+
+
+
+Case-2 ---> 
+New Method
+Key .pem file provided ---> Windows Administrator Password not provided ---> (when Windows Administrator is changed manually by someone)
+SSM
+Run Command
+AWSSupport-RunEC2RescueForWindowsTool   Amazon  Windows
+RUN
+Output
+"copy url" ---> & visit or go to ---> Parameter Store Under (System Manager Shared Resources)
+
+
+OLD Method
+Key .pem file provided ---> Windows Administrator Password not provided ---> (when Windows Administrator is changed manually by someone)
+ssh-keygen -y -f Share-Point-Server.pem > Share-Point-Server.pub
+https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ResettingAdminPassword_EC2Launch.html
+#Other Option is detach the Volume & Attach it to Other Volume & Install the mentioned below package.
+https://s3.amazonaws.com/ec2rescue/windows/EC2Rescue_latest.zip

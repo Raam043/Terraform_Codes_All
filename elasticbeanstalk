@@ -1,0 +1,8 @@
+https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-install-advanced.html
+
+sudo yum install python37
+pip install awsebcli --upgrade --user
+export PATH=~/.local/bin:$PATH
+
+mkdir ~/bin
+cp ~/.local/bin/eb ~/bin

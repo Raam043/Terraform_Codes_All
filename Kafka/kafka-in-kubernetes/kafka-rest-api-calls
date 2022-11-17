@@ -1,0 +1,158 @@
+# Rest Api Calls to Strimzi
+
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://docs.confluent.io/platform/current/tutorials/examples/clients/docs/rest-proxy.html#client-examples-rest-proxy
+
+
+
+
+
+curl -v GET http://localhost:8080/healthy
+
+curl -v GET http://localhost:8080/healthy
+
+curl -v GET http://localhost:8080/ready
+
+
+# Topic Creation & Producing messages
+
+
+# Produce a message using JSON with the value '{ "foo": "bar" }' to the topic jsontest
+curl -X POST \
+"http://localhost:8080/topics/jsontest" \
+-H 'content-type: application/vnd.kafka.json.v2+json'  \
+      --data '{"records":[{"value":{"foo":"bar"}}]}' 
+
+
+
+
+------------------------------------------------------------------------------------------------
+
+# https://docs.confluent.io/2.0.0/kafka-rest/docs/intro.html#inspect-topic-metadata
+
+# Get a list of topics
+curl "http://localhost:8080/topics"
+ 
+
+# Get info about one topic
+curl "http://localhost:8080/topics/jsontest"
+  
+
+# Get info about a topic's partitions
+ curl "http://localhost:8080/topics/jsontest/partitions"
+
+------------------------------------------------------------------------------------------------
+  # Creating Consumers
+ curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" \
+      --data '{"name": "my_consumer_instance", "format": "json", "auto.offset.reset": "earliest"}' \
+      http://localhost:8080/consumers/my_json_consumer
+
+
+  ---> Output of creating consumers
+  -------------
+  {"instance_id":"my_consumer_instance","base_uri":"http://ip172-18-0-52-bvgug0np2ffg00bnk91g-32086.direct.labs.play-with-docker.com:80/consumers/my_json_consumer/instances/my_consumer_instance"}
+
+
+
+
+-----------------------------------------------------------------------------------------------------
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://strimzi.io/blog/2019/07/19/http-bridge-intro/
+
+curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" --data '{"topics":["jsontest"]}' \
+     http://localhost:8080/consumers/my_json_consumer/instances/my_consumer_instance/subscription
+
+
+curl -X GET -H "Accept: application/vnd.kafka.json.v2+json" \
+      http://localhost:8080/consumers/my_json_consumer/instances/my_consumer_instance/records
+
+
+# https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+ curl -X GET http://localhost:8080/consumers/my_json_consumer/instances/my_consumer_instance/records \
+-H 'accept: application/vnd.kafka.json.v2+json'     
+
+# Expected output from preceding command
+  [
+   {"key":null,"value":{"foo":"bar"},"partition":0,"offset":0,"topic":"jsontest"}
+  ]
+
+
+
+
+--------------------------------------------------------------------------------------------
+# No content in response
+curl -X DELETE -H "Content-Type: application/vnd.kafka.v2+json" \
+      http://localhost:8080/consumers/my_json_consumer/instances/my_consumer_instance 
+      
+      
+      
+ ###################################################################################################################################
+ 
+ # https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+
+# Producing messages
+
+curl -X POST \
+  http://localhost:8080/topics/my-topic \
+  -H 'content-type: application/vnd.kafka.json.v2+json' \
+  -d '{
+    "records": [
+        {
+            "key": "key-1",
+            "value": "value-1"
+        },
+        {
+            "key": "key-2",
+            "value": "value-2"
+        }
+    ]
+}'
+
+
+# Consuming messages
+
+curl -X POST http://localhost:8080/consumers/my-group \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "name": "my-consumer",
+    "format": "json",
+    "auto.offset.reset": "earliest",
+    "enable.auto.commit": false
+  }'
+
+
+# Subscribing to the topic
+
+curl -X POST http://localhost:8080/consumers/my-group/instances/my-consumer/subscription \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "topics": [
+        "my-topic"
+    ]
+}'
+
+
+# Consuming messages
+
+curl -X GET http://localhost:8080/consumers/my-group/instances/my-consumer/records \
+  -H 'accept: application/vnd.kafka.json.v2+json'
+
+
+# Committing offsets
+
+curl -X POST http://localhost:8080/consumers/my-group/instances/my-consumer/offsets \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "offsets": [
+        {
+            "topic": "my-topic",
+            "partition": 0,
+            "offset": 2
+        }
+    ]
+}'
+
+# Deleting a consumer
+
+curl -X DELETE http://localhost:8080/consumers/my-group/instances/my-consumer
+

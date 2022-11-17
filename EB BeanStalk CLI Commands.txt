@@ -1,0 +1,55 @@
+1.eb ---> shows help
+
+2.eb init ---> select region with number ---> 5 for Franfurt
+
+3.application name
+
+4.select platform ---> 7
+
+5.ssh-keys ---> 1
+
+done
+
+6.eb list shows current environment
+
+7.eb create ---> for environment creation
+
+8. eb platform show
+Current default platform: Docker 18.06.1-ce
+New environments will be running:  64bit Amazon Linux 2018.03 v2.12.14 running Docker 18.06.1-ce
+
+9.https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_dockerpreconfig.html
+
+10.https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.customenv.html
+
+11.eb create
+
+12.eb local run
+   https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb3-local.html
+
+13. aws ecr get-login
+   https://docs.aws.amazon.com/cli/latest/reference/ecr/get-login.html
+
+14. aws ecr describe-repositories
+   https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-pull-ecr-image.html
+
+15. ECR Policy
+https://docs.aws.amazon.com/AmazonECR/latest/userguide/ecr_managed_policies.html
+  
+16.eb create mysingle ---> Environment Setup for single instance
+https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb3-create.html
+
+17. EB CLI important switches
+https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb3-create.html
+
+Example: eb create cloudgeeks.ca-single-ec2 --instance_profile cloudgeeks.ca-ecr-frankfurt
+
+18.eb create
+
+19. eb config mh-prod
+
+20. In application dicrectory ---> edit ---> the configuration file
+
+(Note: always start with   ----> eb init ---> in new directory + incase error comes docker-compose not found install docker-compose)
+https://docs.docker.com/compose/install/
+

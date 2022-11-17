@@ -1,0 +1,3 @@
+
+aws configure list
+aws configure --profile cloudgeeks

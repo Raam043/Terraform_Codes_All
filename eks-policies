@@ -1,0 +1,149 @@
+# https://docs.aws.amazon.com/eks/latest/userguide/troubleshooting_iam.html
+
+# https://docs.aws.amazon.com/eks/latest/userguide/security_iam_id-based-policy-examples.html
+
+# https://docs.aws.amazon.com/eks/latest/userguide/security_iam_id-based-policy-examples.html#policy_example3
+
+# https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html
+
+# https://docs.aws.amazon.com/eks/latest/userguide/security-iam.html
+
+# https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-service.html
+
+# https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html
+
+eksctl utils associate-iam-oidc-provider --cluster <cluster_name> --approve
+
+
+# EC2 Assume Role
+-------------------
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": ["ec2.amazonaws.com",
+                   "eks.amazonaws.com"]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+
+
+
+
+
+# https://docs.aws.amazon.com/eks/latest/userguide/troubleshooting_iam.html
+The following example error occurs when an IAM user named marymajor tries to use the console to perform an action in Amazon EKS. However, the action requires the service to have permissions granted by a service role. Mary does not have permissions to pass the role to the service.
+
+User: arn:aws:iam::123456789012:user/marymajor is not authorized to perform: iam:PassRole
+In this case, Mary asks her administrator to update her policies to allow her to perform the iam:PassRole action.
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateNetworkInterface",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DetachNetworkInterface",
+                "ec2:ModifyNetworkInterfaceAttribute",
+                "ec2:DescribeInstances",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs",
+                "ec2:CreateNetworkInterfacePermission",
+                "iam:ListAttachedRolePolicies",
+                "ec2:CreateSecurityGroup",
+                "iam:AttachRolePolicy",
+                "iam:CreateRole",
+                "iam:PutRolePolicy",
+                "iam:GetRole",
+                "iam:PassRole",
+                "iam:getRolePolicy",
+                "eks:*"
+
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DeleteSecurityGroup",
+                "ec2:RevokeSecurityGroupIngress",
+                "ec2:AuthorizeSecurityGroupIngress"
+            ],
+            "Resource": "arn:aws:ec2:*:*:security-group/*",
+            "Condition": {
+                "ForAnyValue:StringLike": {
+                    "ec2:ResourceTag/Name": "eks-cluster-sg*"
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateTags",
+                "ec2:DeleteTags"
+            ],
+            "Resource": [
+                "arn:aws:ec2:*:*:vpc/*",
+                "arn:aws:ec2:*:*:subnet/*"
+            ],
+            "Condition": {
+                "ForAnyValue:StringLike": {
+                    "aws:TagKeys": [
+                        "kubernetes.io/cluster/*"
+                    ]
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateTags",
+                "ec2:DeleteTags"
+            ],
+            "Resource": [
+                "arn:aws:ec2:*:*:security-group/*"
+            ],
+            "Condition": {
+                "ForAnyValue:StringLike": {
+                    "aws:TagKeys": [
+                        "kubernetes.io/cluster/*"
+                    ],
+                    "aws:RequestTag/Name": "eks-cluster-sg*"
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Action": "route53:AssociateVPCWithHostedZone",
+            "Resource": "arn:aws:route53:::hostedzone/*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "logs:CreateLogGroup",
+            "Resource": "arn:aws:logs:*:*:log-group:/aws/eks/*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogStream",
+                "logs:DescribeLogStreams"
+            ],
+            "Resource": "arn:aws:logs:*:*:log-group:/aws/eks/*:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "logs:PutLogEvents",
+            "Resource": "arn:aws:logs:*:*:log-group:/aws/eks/*:*:*"
+        }
+    ]
+}

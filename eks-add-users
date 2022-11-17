@@ -1,0 +1,173 @@
+# https://www.youtube.com/watch?v=aIpHYYcR7oU&ab_channel=AntonPutra
+
+# https://antonputra.com/eks-add-user-vs-role/
+
+
+
+Add an IAM user with read only access to EKS cluster
+Add an IAM role with root access and assume this role by IAM user
+Add an IAM user with read only access to EKS cluster
+Create rbac.yaml
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: reader
+rules:
+- apiGroups: ["*"]
+  resources: ["deployments", "configmaps", "pods", "secrets", "services"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: reader
+subjects:
+- kind: Group
+  name: reader
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: reader
+  apiGroup: rbac.authorization.k8s.io
+Create RBAC
+$ kubectl apply -f rbac.yaml
+Create AmazonEKSDeveloperPolicy policy to let users view nodes and workloads for all clusters in the AWS Management Console
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "eks:DescribeNodegroup",
+                "eks:ListNodegroups",
+                "eks:DescribeCluster",
+                "eks:ListClusters",
+                "eks:AccessKubernetesApi",
+                "ssm:GetParameter",
+                "eks:ListUpdates",
+                "eks:ListFargateProfiles"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+Create eks-developer IAM group and attach AmazonEKSDeveloperPolicy policy
+
+Create developer user
+
+Add developer profile aws configure --profile developer
+
+Add to aws-auth configmap developer user ARN.
+
+$ kubectl edit -n kube-system configmap/aws-auth
+...
+  mapUsers: |
+    - userarn: arn:aws:iam::424432388155:user/developer
+      username: developer
+      groups: 
+      - reader
+...
+Configure kubectl context for developer user
+$ aws eks --region us-east-1 update-kubeconfig --name eks --profile developer
+Check kubeconfig
+$ kubectl config view --minify
+Check permissions
+kubectl auth can-i get pods
+kubectl auth can-i create pods
+kubectl run nginx --image=nginx
+Create an IAM role with admin/root access and assume this role by IAM user.
+Create AmazonEKSAdminPolicy policy
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "eks:*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": "eks.amazonaws.com"
+                }
+            }
+        }
+    ]
+}
+Create eks-admin role and attach AmazonEKSAdminPolicy policy
+
+Describe eks-admin role
+
+$ aws iam get-role --profile terraform --role-name eks-admin
+Create AmazonEKSAssumePolicy policy that allows to assume the role
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:AssumeRole"
+            ],
+            "Resource": "arn:aws:iam::424432388155:role/eks-admin"
+        }
+    ]
+}
+Create manager user to use eks-admin role
+
+Add manager profile aws configure --profile manager
+
+Check if manager user can assume eks-admin role
+
+$ aws sts assume-role --role-arn arn:aws:iam::424432388155:role/eks-admin --role-session-name manager-session --profile manager
+Update kubeconfig for the user that created EKS cluster
+$ aws eks --region us-east-1 update-kubeconfig --name eks --profile terraform
+Add to aws-auth configmap eks-admin role ARN.
+$ kubectl edit -n kube-system configmap/aws-auth
+...
+- rolearn: arn:aws:iam::424432388155:role/eks-admin
+  username: eks-admin
+  groups:
+  - system:masters
+...
+Create eks-admin profile to assume role vim ~/.aws/config
+[profile eks-admin]
+role_arn = arn:aws:iam::424432388155:role/eks-admin
+source_profile = manager
+Configure kubectl context for manager user to automatically assume eks-admin role
+$ aws eks --region us-east-1 update-kubeconfig --name eks --profile eks-admin
+Check kubeconfig
+$ kubectl config view --minify
+Check if manager has admin access to EKS cluster
+$ kubectl auth can-i "*" "*"
+Clean Up
+Delete roles
+
+eks-admin
+Delete policies
+
+AmazonEKSDeveloperPolicy
+AmazonEKSAssumePolicy
+AmazonEKSAdminPolicy
+Delete IAM groups
+
+eks-admin
+eks-developer
+Delete users
+
+manager
+devops
+developer
+Clean UP ~/.aws/config and ~/.aws/credentials
+
+Clean UP
+
+$ aws eks --region us-east-1 update-kubeconfig --name eks --profile terraform
+$ kubectl edit -n kube-system configmap/aws-auth
+$ kubectl delete clusterrole reader
+$ kubectl delete clusterrolebinding reader

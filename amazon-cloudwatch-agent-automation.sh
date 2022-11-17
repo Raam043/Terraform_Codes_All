@@ -1,0 +1,179 @@
+#!/bin/bash
+# Purpose: AmazonCloudWatch Agent Automated Installation
+# OS: AmazonLinux
+# https://aws.amazon.com/blogs/mt/create-amazon-ec2-auto-scaling-policy-memory-utilization-metric-linux/
+# https://awswithatiq.com/cloudwatch-to-monitor-memory-disk-and-access-log/
+
+
+############################################################
+# Note: arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy     # Attach this policy to ROLE + YOUR REGION us-east-1
+############################################################
+
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/identify_ec2_instances.html
+
+yum install -y amazon-cloudwatch-agent
+
+INSTANCE_ID=$(cat /sys/devices/virtual/dmi/id/board_asset_tag)
+
+cat << EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml
+[agent]
+  collection_jitter = "0s"
+  debug = false
+  flush_interval = "1s"
+  flush_jitter = "0s"
+  hostname = ""
+  interval = "60s"
+  logfile = "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  logtarget = "lumberjack"
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  omit_hostname = false
+  precision = ""
+  quiet = false
+  round_interval = false
+
+[inputs]
+
+  [[inputs.disk]]
+    fieldpass = ["used_percent"]
+    tagexclude = ["mode"]
+    [inputs.disk.tags]
+      metricPath = "metrics"
+
+  [[inputs.logfile]]
+    destination = "cloudwatchlogs"
+    file_state_folder = "/opt/aws/amazon-cloudwatch-agent/logs/state"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-hup.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-hup.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-init.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-init.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-init-cmd.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-init-cmd.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cloud-init.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cloud-init.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cloud-init-output.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cloud-init-output.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-wire.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-wire.log"
+      pipe = false
+      timezone = "UTC"
+    [inputs.logfile.tags]
+      metricPath = "logs"
+
+  [[inputs.mem]]
+    fieldpass = ["used_percent"]
+    [inputs.mem.tags]
+      metricPath = "metrics"
+
+[outputs]
+
+  [[outputs.cloudwatch]]
+    force_flush_interval = "60s"
+    namespace = "CWAgent"
+    region = "us-east-1"
+    tagexclude = ["host", "metricPath"]
+    [outputs.cloudwatch.tagpass]
+      metricPath = ["metrics"]
+
+  [[outputs.cloudwatchlogs]]
+    force_flush_interval = "5s"
+    log_stream_name = "$INSTANCE_ID"
+    region = "us-east-1"
+    tagexclude = ["metricPath"]
+    [outputs.cloudwatchlogs.tagpass]
+      metricPath = ["logs"]
+
+[processors]
+
+  [[processors.ec2tagger]]
+    ec2_metadata_tags = ["InstanceId"]
+    refresh_interval_seconds = "0s"
+    [processors.ec2tagger.tagpass]
+      metricPath = ["metrics"]
+
+
+EOF
+
+# https://stackoverflow.com/questions/10309968/sed-search-and-replace-strings-containing
+LINE_OLD='/opt/aws/amazon-cloudwatch-agent/bin/start-amazon-cloudwatch-agent'
+LINE_NEW='/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent -config /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml'
+
+sed -i "s%$LINE_OLD%$LINE_NEW%g"  /etc/systemd/system/amazon-cloudwatch-agent.service
+
+
+systemctl daemon-reload
+
+systemctl start amazon-cloudwatch-agent
+
+systemctl enable amazon-cloudwatch-agent
+
+
+
+# In case of Auto-Scaling Group Memory
+
+echo '
+{
+        "agent": {
+                "metrics_collection_interval": 60
+        },
+        "metrics": {
+                "namespace": "ASG_Memory",
+                "append_dimensions": {
+                        "AutoScalingGroupName": "${aws:AutoScalingGroupName}",
+                        "InstanceId": "${aws:InstanceId}"
+                },
+                "aggregation_dimensions" : [["AutoScalingGroupName"]],
+                "metrics_collected": {
+                        "mem": {
+                                "measurement": [
+                                         {"name": "mem_used_percent", "rename": "MemoryUtilization", "unit": "Percent"}
+                                ],
+                                "metrics_collection_interval": 60
+                        }
+                }
+        }
+}' > /opt/aws/amazon-cloudwatch-agent/bin/config.json
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
+
+systemctl daemon-reload
+
+systemctl start amazon-cloudwatch-agent
+
+systemctl enable amazon-cloudwatch-agent
+
+## End

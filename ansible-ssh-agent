@@ -1,0 +1,14 @@
+cat <<EOF > ansible.cfg
+[defaults]
+host_key_checking = False
+
+[ssh_connection]
+ssh_args = -o ForwardAgent=yes -o ControlMaster=auto -o ControlPersist=60s
+EOF
+
+ssh-agent bash
+ssh-add ~/.ssh/id_rsa
+ssh-add -L
+
+
+# https://www.calazan.com/using-ssh-agent-forwarding-with-ansible/

@@ -1,0 +1,112 @@
+#!/bin/bash
+# Purpose: Kafka Cluster In Kubernetes
+# Maintainer DevOps <Muhammad Asim <quickbooks2018@gmail.com>
+
+# Kubectl Installation
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x ./kubectl
+mv ./kubectl /usr/local/bin/kubectl
+kubectl version --client
+
+# Kind Installation
+# Latest Version
+# 
+curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-amd64"
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
+chmod +x ./kind
+mv ./kind /usr/local/bin
+
+# Cluster Creation
+
+ kind create cluster --name cloudgeeks-ca --image kindest/node:v1.19.0
+
+
+ kubectl cluster-info --context kind-cloudgeeks-ca
+
+# Strimzi Kafka Setup
+
+# Operator Installation
+
+kubectl create ns kafka
+
+kubectl apply -f "https://strimzi.io/install/latest?namespace=kafka"
+
+
+sleep 30
+# cloudgeeks-ca Installation with replication (Internal) ---> ephemeral storage nodeport
+
+cat << 'EOF' > strimzi-kafka.yaml
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: cloudgeeks-ca-kafka
+  namespace: kafka
+spec:
+  kafka:
+    version: 2.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external
+        port: 9094
+        type: nodeport
+        tls: false
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      log.message.format.version: "2.6"
+    storage:
+      type: ephemeral  
+  zookeeper:
+    replicas: 3
+    storage:
+      type: ephemeral
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+EOF
+kubectl apply -f strimzi-kafka.yaml
+
+sleep 30
+# Strimzi Kafka Bridge Setup
+
+cat << 'EOF' > strimzi-kafka-bridge.yaml
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaBridge
+metadata:
+  name: cloudgeeks-ca-bridge
+  namespace: kafka
+spec:
+  replicas: 3
+  bootstrapServers: cloudgeeks-ca-kafka-kafka-bootstrap:9092
+  http:
+    port: 8080
+EOF
+kubectl apply -f strimzi-kafka-bridge.yaml
+
+sleep 30
+# Expose the Stimzi Kafka Bridge
+
+kubectl expose deployment cloudgeeks-ca-bridge-bridge --type=NodePort  --protocol TCP --port 80 --target-port 8080 --name=cloudgeeks-ca-bridge-exposed  -n kafka
+
+echo -e "\nHello from cloudgeeks.ca  do this part manually ok\n"
+
+echo -e "\nMentioned below is an example simply replace the ports an shown in mentioned below example OK"
+
+echo -e "\nkubectl port-forward svc/cloudgeeks-ca-bridge-exposed --address 0.0.0.0 31921:80 -n kafka &\n"
+
+echo -e "\nEnjoy :)\n"
+    
+    
+#END

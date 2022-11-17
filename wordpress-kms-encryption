@@ -1,0 +1,131 @@
+#!/bin/bash
+# Purpose: KMS Encryption Decryption
+# https://docs.aws.amazon.com/cli/latest/reference/kms/encrypt.html
+
+docker network ls
+
+docker network create cloudgeeks.ca
+
+
+### Encryption ###  ### Plain Text ###
+
+#1. aws kms list-keys --region us-east-1
+
+#2. aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a  --plaintext "asim" --output text --query CiphertextBlob | base64 --decode > username.txt
+
+    aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a  --plaintext "abc" --output text --query CiphertextBlob | base64 --decode > password.txt
+    
+    aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a  --plaintext "cloudgeeksca" --output text --query CiphertextBlob | base64 --decode > databasename.txt
+    
+    
+
+#3. aws kms decrypt --region us-east-1 --ciphertext-blob fileb://username.txt --output text --query Plaintext | base64 --decode 
+
+
+# Secrets with AWS Encryption
+
+### Decryption ###
+
+MYSQL_USER=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/username.txt --output text --query Plaintext | base64 --decode`
+MYSQL_PASSWORD=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/password.txt --output text --query Plaintext | base64 --decode`
+MYSQL_DATABASE=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/databasename.txt --output text --query Plaintext | base64 --decode`
+
+
+
+
+# Demo Application Wordpress
+
+# Mysql
+docker run --name mysql --network cloudgeeks.ca -v ~/mysql:/var/lib/mysql -e MYSQL_USER="$MYSQL_USER" -e MYSQL_PASSWORD="$MYSQL_PASSWORD" -e MYSQL_ROOT_PASSWORD="$MYSQL_USER" -e MYSQL_DATABASE="MYSQL_DATABASE" --restart unless-stopped -d mysql:5.7
+
+# Wordpress
+docker run --name wordpress --network cloudgeeks.ca --link=mysql:db -v ~/cloudgeeks.ca.com:/var/www/html --restart unless-stopped -p 80:80 -d wordpress
+
+#END
+
+
+
+
+# Encryption ### ### File ### ---> size 4Kb
+# https://docs.aws.amazon.com/cli/latest/reference/kms/encrypt.html
+
+aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a --plaintext fileb://id_rsa --output text --query CiphertextBlob | base64 --decode > id_rsa_encrypted
+  
+# Private key Encrypion  
+aws kms encrypt --region us-east-1 \
+    --key-id 1234abcd-12ab-34cd-56ef-1234567890ab \
+    --plaintext fileb://id_rsa \
+    --output text \
+    --query CiphertextBlob | base64 \
+    --decode > id_rsa_encrypted  
+    
+# Private Key Decryption
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb://id_rsa_encrypted --output text --query Plaintext | base64 --decode > id_rsa
+
+
+
+# KMS Policy to attach with ec2 instance
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "KeyActions",
+            "Effect": "Allow",
+            "Action": [
+                "kms:Encrypt",
+                "kms:Decrypt",
+                "kms:DescribeKey",
+                "kms:ListGrants"
+            ],
+            "Resource": "arn:aws:kms:us-east-1:12345678:key/abcdefaghe"
+        },
+        {
+            "Sid": "KMSActions",
+            "Effect": "Allow",
+            "Action": [
+                "kms:ListKeys",
+                "kms:ListAliases"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "kms:DescribeCustomKeyStores",
+                "kms:ListKeys",
+                "kms:DeleteCustomKeyStore",
+                "kms:GenerateRandom",
+                "kms:UpdateCustomKeyStore",
+                "kms:ListAliases",
+                "kms:DisconnectCustomKeyStore",
+                "kms:CreateKey",
+                "kms:ConnectCustomKeyStore",
+                "kms:CreateCustomKeyStore"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": "kms:*",
+            "Resource": [
+                "arn:aws:kms:*:*:alias/*",
+                "arn:aws:kms:us-west-2:898668804275:key/YOURKMSKEYID"
+            ]
+        }
+    ]
+}
+
+

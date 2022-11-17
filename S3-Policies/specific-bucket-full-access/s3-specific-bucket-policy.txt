@@ -1,0 +1,324 @@
+# Specific Bucket Full Access
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:DeleteObject",
+                "s3:Put*",
+                "s3:Get*",
+                "s3:Describe*",
+                "s3:ListBucket*"
+            ],
+            "Resource": ["arn:aws:s3:::cloudgeeks", "arn:aws:s3:::cloudgeeks/*"
+            ]
+
+        }
+        
+    ]
+}
+
+
+
+
+
+
+
+# Specific Bucket Full Access with AWS Console
+
+# https://aws.amazon.com/premiumsupport/knowledge-center/s3-access-denied-listobjects-sync/
+
+# Note: For AWS Console ---> "s3:ListAllMyBuckets" is MUST
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject*",
+                "s3:ListBucket*",
+                "s3:GetObject*",
+                "s3:DeleteObject*",
+                "s3:GetBucketLocation*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::YOURBUCKET1/*",
+                "arn:aws:s3:::YOURBUCKET2/*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListAllMyBuckets",
+                "s3:ListBucket"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetBucketLocation",
+                "s3:ListAllMyBuckets"
+            ],
+            "Resource": "arn:aws:s3:::cloudgeeksca*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": ["s3:ListBucket"],
+            "Resource": ["arn:aws:s3:::cloudgeeksca"]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject*",
+                "s3:PutObjectAcl*",
+                "s3:GetObject*",
+                "s3:GetObjectAcl*",
+                "s3:DeleteObject*"
+            ],
+            "Resource": ["arn:aws:s3:::cloudgeeksca/*"]
+        }
+    ]
+}
+
+
+# Specific Bucket Full Access (Progmatic)
+-----------------------------
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": "arn:aws:s3:::YourBucket"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+
+                "s3:PutObject*",
+                "s3:GetObject*",
+                "s3:DeleteObject*"
+            ],
+            "Resource": "arn:aws:s3:::YourBucket/*"
+        }
+    ]
+}
+
+-----------------------------------------------------------------------------------------------
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": "arn:aws:s3:::MYBUCKET-qa-pipeline"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject*",
+                "s3:GetObject*"
+            ],
+            "Resource": "arn:aws:s3:::MYBUCKET-qa-pipeline/*"
+        }
+    ]
+}
+
+
+########################################################################################
+
+
+
+# https://computingforgeeks.com/create-aws-s3-upload-and-list-objects-policy-without-delete-action/
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:Get*",
+                "s3:List*",
+                "s3:Put*"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+# https://stackoverflow.com/questions/9398541/how-to-remove-delete-permission-on-amazon-s3
+
+{    
+
+"Statement": [    
+
+    {
+        "Effect": "Allow",
+        "Action": [
+            "s3:GetObject",
+            "s3:PutObject",
+            "s3:GetObjectAcl",
+            "s3:PutObjectAcl",
+            "s3:ListBucket",
+            "s3:GetBucketAcl",
+            "s3:PutBucketAcl",
+            "s3:GetBucketLocation"
+        ],
+        "Resource": "arn:aws:s3:::mybucketname/*",
+        "Condition": {}
+    },
+    {
+        "Effect": "Allow",
+        "Action": "s3:ListAllMyBuckets",
+        "Resource": "*",
+        "Condition": {}
+    },
+    {
+        "Effect": "Deny",
+        "Action": [
+            "s3:DeleteBucket",
+            "s3:DeleteBucketPolicy",
+            "s3:DeleteBucketWebsite",
+            "s3:DeleteObject",
+            "s3:DeleteObjectVersion"
+        ],
+        "Resource": "arn:aws:s3:::mybucketname/*",    
+
+        "Condition": {}    
+
+    }
+]
+}    
+
+
+
+
+###########################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetBucketLocation",
+                "s3:ListAllMyBuckets"
+            ],
+            "Resource": "arn:aws:s3:::*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::asim-s3-bucket-test"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::asim-s3-bucket-test/*"
+            ]
+        }
+    ]
+}
+
+
+# https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_s3_rw-bucket.html
+
+# https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html
+
+# https://github.com/miztiik/AWS-Demos/tree/master/How-To/setup-sftp-for-s3
+
+
+
+
+################################################################################################################
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": "arn:aws:s3:::MYBUCKET-qa-pipeline"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject"
+            ],
+            "Resource": "arn:aws:s3:::MYBUCKET-qa-pipeline/*"
+        }
+    ]
+}
+
+
+
+

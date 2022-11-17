@@ -1,0 +1,192 @@
+#!/bin/bash
+# Purpose: Kubernetes Cluster
+# https://hub.docker.com/r/kindest/node/tags
+# https://hub.docker.com/r/kindest/node
+# https://hub.docker.com/u/kindest
+# https://hub.docker.com/r/kindest/node/tags
+
+####################
+# Docker Installtion
+####################
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+rm -f get-docker.sh
+
+#######################
+# Kubectl Installation
+#######################
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x ./kubectl
+mv ./kubectl /usr/local/bin/kubectl
+kubectl version --client
+
+####################
+# Helm Installation
+####################
+# https://helm.sh/docs/intro/install/
+
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+cp /usr/local/bin/helm /usr/bin/helm
+rm -f get_helm.sh
+helm version
+
+###################
+# Kind Installation
+###################
+
+ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-amd64
+
+# Latest Version
+# https://github.com/kubernetes-sigs/kind
+# curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-amd64"
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
+chmod +x ./kind
+mv ./kind /usr/local/bin
+
+
+# kind create cluster --name cloudgeeks-ca
+
+kind create cluster --name cloudgeeks-ca --image kindest/node:v1.21.12
+
+# kind create cluster --name cloudgeeks-ca --image kindest/node:v1.20.7
+
+# kind create cluster --name cloudgeeks-ca --image kindest/node:v1.19.0
+
+# kind create cluster --name cloudgeeks-ca --image kindest/node:v1.18.8
+
+# kind create cluster --name cloudgeeks-ca --image kindest/node:v1.18.6
+
+# kubectl cluster-info
+
+# End
+
+# kind delete cluster --name kind-cloudgeeks-ca
+
+# Delete a cluster ---> docker rm -f $(docker ps -aq)
+
+# Cluster stuck   ----> systemctl restart docker
+
+
+####################
+# Create Deployment
+###################
+# kubectl create deployment <Deplyment-Name> --image=<Container-Image>
+# kubectl create deployment blue-deployment --image=quickbooks2018/blue
+
+######################
+# Scaling a Deployment
+######################
+# kubectl scale --replicas=3 deployment/<Deployment-Name>
+# kubectl scale --replicas=3 deployment/blue-deployment
+
+#################################
+# Expose Deployment as a Service
+#################################
+# kubectl expose deployment <Deployment-Name>  --type=NodePort --port=80 --target-port=80 --name=<Service-Name-To-Be-Created>
+# kubectl expose deployment blue-deployment --type=NodePort --port=80 --target-port=80 --name=blue-service
+
+###############
+# Port Forward
+###############
+# kubectl port-forward service/blue-service --address 0.0.0.0 11000:80 -n default
+
+# End
+
+###############
+# AmazonLinux      # ---> usage
+################
+!/bin/bash
+# Purpose: Kubernetes Cluster
+# https://hub.docker.com/r/kindest/node/tags
+# https://hub.docker.com/r/kindest/node
+# https://hub.docker.com/u/kindest
+# https://hub.docker.com/r/kindest/node/tags
+
+
+#######################
+# Kubectl Installation
+#######################
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x ./kubectl
+mv ./kubectl /usr/bin/kubectl
+kubectl version --client
+
+####################
+# Helm Installation
+####################
+# https://helm.sh/docs/intro/install/
+
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+cp /usr/local/bin/helm /usr/bin/helm
+rm -f get_helm.sh
+helm version
+
+
+# Kind Installation
+
+ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-amd64
+
+# Latest Version
+# https://github.com/kubernetes-sigs/kind
+# curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-amd64"
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
+chmod +x ./kind
+mv ./kind /usr/bin
+
+
+# kind create cluster --name cloudgeeks-ca
+
+kind create cluster --name cloudgeeks-ca --image kindest/node:v1.21.10
+
+# kind create cluster --name cloudgeeks-ca --image kindest/node:v1.20.7
+
+# kind create cluster --name cloudgeeks-ca --image kindest/node:v1.19.0
+
+# kind create cluster --name cloudgeeks-ca --image kindest/node:v1.18.8
+
+# kind create cluster --name cloudgeeks-ca --image kindest/node:v1.18.6
+
+# kubectl cluster-info
+
+# End
+
+# kind delete cluster --name kind-cloudgeeks-ca
+
+# Delete a cluster ---> docker rm -f $(docker ps -aq)
+
+# Cluster stuck   ----> systemctl restart docker
+
+
+####################
+# Create Deployment
+###################
+# kubectl create deployment <Deplyment-Name> --image=<Container-Image>
+# kubectl create deployment blue-deployment --image=quickbooks2018/blue
+
+######################
+# Scaling a Deployment
+######################
+# kubectl scale --replicas=3 deployment/<Deployment-Name>
+# kubectl scale --replicas=3 deployment/blue-deployment
+
+#################################
+# Expose Deployment as a Service
+#################################
+# kubectl expose deployment <Deployment-Name>  --type=NodePort --port=80 --target-port=80 --name=<Service-Name-To-Be-Created>
+# kubectl expose deployment blue-deployment --type=NodePort --port=80 --target-port=80 --name=blue-service
+
+###############
+# Port Forward
+###############
+# kubectl port-forward service/blue-service --address 0.0.0.0 11000:80 -n default
+
+#END
+
+
+  

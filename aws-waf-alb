@@ -1,0 +1,13 @@
+# https://docs.aws.amazon.com/waf/latest/developerguide/listing-managed-ips.html
+
+###########################################################
+# List Ip Address which are block by AWS WAF for 5 Minutes
+############################################################
+aws wafv2 get-rate-based-statement-managed-keys --scope=REGIONAL --region=region --web-acl-name=WebACLName --web-acl-id=WebACLId --rule-name=RuleName
+
+
+aws wafv2 get-rate-based-statement-managed-keys --scope=REGIONAL --region=us-east-1 --web-acl-name=cloudgeeks-waf --web-acl-id=d2efde18-7908-40fd-82df-a94e2a2e13af --rule-name=BlockIPWith100Requests
+
+
+
+

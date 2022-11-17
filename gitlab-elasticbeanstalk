@@ -1,0 +1,54 @@
+image: docker:latest
+
+variables:
+  REPOSITORY_URL: 898668804275.dkr.ecr.eu-central-1.amazonaws.com/cloudgeeks.ca/nginx-web-app
+
+services:
+  - docker:dind
+
+before_script:
+  - apk add --no-cache curl jq python py-pip
+  - pip install awscli
+  - pip install awsebcli --upgrade --user
+  - pwd
+  - echo $PATH
+  - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:~/bin
+  - echo $PATH
+  - whoami
+  - cd /root
+  - mkdir /root/bin
+  - cp .local/bin/eb /root/bin/
+  - ls
+  - pwd
+  - eb
+  - aws --version
+  - ls /builds/quickbooks2018/aws-eb
+  - pwd
+  - ls -a
+  - apk add git
+  - which git
+
+stages:
+  - build
+
+build:
+  stage: build
+  script:
+    - $(aws ecr get-login --no-include-email --region eu-central-1)
+    - pwd
+    - ls -a
+    - mkdir /root/app
+    - cd /root/app
+    - pwd
+    - cp /builds/quickbooks2018/aws-eb/Dockerrun.aws.json .
+    - ls -a
+    - eb init cloudgeeks.ca-mh --region eu-central-1 --platform "Multi-container Docker 18.06.1-ce (Generic)" --keyname cloudgeeks.ca-Ubuntu-18-Terraform
+    - eb codesource local
+    - ls -a
+    - cat .elasticbeanstalk/config.yml
+    
+    
+  only:
+    - master
+  tags:
+    - docker

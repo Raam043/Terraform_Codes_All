@@ -1,0 +1,280 @@
+#bin/bash
+# Purpose: KMS Encryption Decryption
+
+docker network ls
+
+docker network create cloudgeeks.ca
+
+
+# Secrets with AWS Encryption
+
+MYSQL_USER=`aws kms decrypt --region us-west-2 --ciphertext-blob fileb:///root/secrets/username.txt --output text --query Plaintext | base64 --decode`
+MYSQL_PASSWORD=`aws kms decrypt --region us-west-2 --ciphertext-blob fileb:///root/secrets/password.txt --output text --query Plaintext | base64 --decode`
+MYSQL_DATABASE=`aws kms decrypt --region us-west-2 --ciphertext-blob fileb:///root/secrets/databasename.txt --output text --query Plaintext | base64 --decode`
+
+# Application
+
+docker run --name mysql --network cloudgeeks.ca -v ~/mysql:/var/lib/mysql -e MYSQL_USER="$MYSQL_USER" -e MYSQL_PASSWORD="$MYSQL_PASSWORD" -e MYSQL_ROOT_PASSWORD="$MYSQL_USER" -e MYSQL_DATABASE="MYSQL_DATABASE" --restart unless-stopped -d mysql:5.7
+
+docker run --name wordpress \
+--network cloudgeeks.ca \
+--link=mysql:db \
+-v ~/cloudgeeks.ca.com:/var/www/html \
+--restart unless-stopped \
+-p 80:80 -d wordpress
+
+#END
+
+
+
+### Encryption ###
+
+#1. aws kms list-keys --region us-west-2
+
+#2. aws kms encrypt --region us-west-2 --key-id 3b7a126e-db34-483b-a249-d985389e06a3  --plaintext "asim" --output text --query CiphertextBlob | base64 --decode > username.txt
+
+#3. aws kms decrypt --region us-west-2 --ciphertext-blob fileb://username.txt --output text --query Plaintext | base64 --decode 
+
+
+#bin/bash
+# Purpose: KMS Encryption Decryption
+
+docker network ls
+
+docker network create cloudgeeks.ca
+
+
+# Secrets with AWS Encryption
+
+MYSQL_USER=`aws kms decrypt --region us-west-2 --ciphertext-blob fileb:///root/secrets/username.txt --output text --query Plaintext | base64 --decode`
+MYSQL_PASSWORD=`aws kms decrypt --region us-west-2 --ciphertext-blob fileb:///root/secrets/password.txt --output text --query Plaintext | base64 --decode`
+MYSQL_DATABASE=`aws kms decrypt --region us-west-2 --ciphertext-blob fileb:///root/secrets/databasename.txt --output text --query Plaintext | base64 --decode`
+
+# Application
+
+docker run --name mysql --network cloudgeeks.ca -v ~/mysql:/var/lib/mysql -e MYSQL_USER="$MYSQL_USER" -e MYSQL_PASSWORD="$MYSQL_PASSWORD" -e MYSQL_ROOT_PASSWORD="$MYSQL_USER" -e MYSQL_DATABASE="MYSQL_DATABASE" --restart unless-stopped -d mysql:5.7
+
+docker run --name wordpress \
+--network cloudgeeks.ca \
+--link=mysql:db \
+-v ~/cloudgeeks.ca.com:/var/www/html \
+--restart unless-stopped \
+-p 80:80 -d wordpress
+
+#END
+
+
+### Encryption ###
+
+#1. aws kms list-keys --region us-west-2
+
+#2. aws kms encrypt --region us-west-2 --key-id 3b7a126e-db34-483b-a249-d985389e06a3  --plaintext "asim" --output text --query CiphertextBlob | base64 --decode > username.txt
+
+#3. aws kms decrypt --region us-west-2 --ciphertext-blob fileb://username.txt --output text --query Plaintext | base64 --decode 
+
+
+# KMS Policy
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "kms:DescribeCustomKeyStores",
+                "kms:ListKeys",
+                "kms:DeleteCustomKeyStore",
+                "kms:GenerateRandom",
+                "kms:UpdateCustomKeyStore",
+                "kms:ListAliases",
+                "kms:DisconnectCustomKeyStore",
+                "kms:CreateKey",
+                "kms:ConnectCustomKeyStore",
+                "kms:CreateCustomKeyStore"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": "kms:*",
+            "Resource": [
+                "arn:aws:kms:*:*:alias/*",
+                "arn:aws:kms:us-west-2:898668804275:key/YOURKMSKEYID"
+            ]
+        }
+    ]
+}
+
+
+
+
+############################################## Script for server only ###########################################################
+
+#!/bin/bash
+
+mkdir -p /root/secrets
+
+# Encryption
+
+
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext 12345678 --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-root-password.txt
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext bitnami_wordpress --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-database.txt 
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext asim.arain --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-user.txt 
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext 12345678 --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-password.txt 
+
+
+
+# Decryption
+
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-root-password.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-database.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-user.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-password.txt  --output text --query Plaintext | base64 --decode
+#END
+
+
+MARIADB_ROOT_PASSWORD=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-root-password.txt --output text --query Plaintext | base64 --decode`
+MARIADB_DATABASE=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-database.txt --output text --query Plaintext | base64 --decode`
+MARIADB_USER=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-user.txt --output text --query Plaintext | base64 --decode`
+MARIADB_PASSWORD=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-password.txt  --output text --query Plaintext | base64 --decode`
+
+
+echo "\n"
+echo "Credentials Decrypted"
+
+echo " This is Mariadb root password = $MARIADB_ROOT_PASSWORD "
+echo " This is Mariadb database name  = $MARIADB_DATABASE "
+echo " This is Mariadb User = $MARIADB_USER "
+echo " This is Mariadb password = $MARIADB_PASSWORD "
+
+
+
+####################################################################################################################################################################
+
+# Note: Mention below data is just a sample data, no actual KMS keys involved.
+
+# Steps to encrypt private key via kms
+
+# KMS Key Creation from console 
+
+1. Create a Customer managed key
+
+2. Grab the Key ID: 7702849e-2bc0-4697-ad62-303523cacd9a
+
+3. Use this Key ID with region details in mentioned below examples.
+
+
+
+# Example 1
+
+# Encryption ### ### File ### ---> size 4Kb
+
+
+
+# Private key Encrypion 
+aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a --plaintext fileb://id_rsa --output text --query CiphertextBlob | base64 --decode > id_rsa_encrypted
+  
+
+    
+# Private Key Decryption
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb://id_rsa_encrypted --output text --query Plaintext | base64 --decode > id_rsa
+
+
+# Example 2
+
+
+### Encryption ###  ### Plain Text ###
+
+# Steps to encrypt secrets via kms
+
+
+
+# 1. aws kms list-keys --region us-east-1
+
+# Encryption
+
+# 2. 
+
+    aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a  --plaintext "abc" --output text --query CiphertextBlob | base64 --decode > password.txt
+    
+    aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a  --plaintext "reptrak" --output text --query CiphertextBlob | base64 --decode > databasename.txt
+    
+    
+# Decryption     
+
+# 3. 
+ 
+     aws kms decrypt --region us-east-1 --ciphertext-blob fileb://password.txt --output text --query Plaintext | base64 --decode 
+
+     aws kms decrypt --region us-east-1 --ciphertext-blob fileb://databasename.txt --output text --query Plaintext | base64 --decode 
+
+   
+
+
+# How to use KMS Encryption in docker ?
+
+
+# Demo application docker
+
+#!/bin/bash
+
+mkdir -p /root/secrets
+
+# Encryption
+
+
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext 12345678 --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-root-password.txt
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext bitnami_wordpress --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-database.txt
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext asim.arain --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-user.txt
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext 12345678 --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-password.txt
+
+
+
+# Decryption
+
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-root-password.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-database.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-user.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-password.txt  --output text --query Plaintext | base64 --decode
+#END
+
+
+MARIADB_ROOT_PASSWORD=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-root-password.txt --output text --query Plaintext | base64 --decode`
+MARIADB_DATABASE=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-database.txt --output text --query Plaintext | base64 --decode`
+MARIADB_USER=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-user.txt --output text --query Plaintext | base64 --decode`
+MARIADB_PASSWORD=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-password.txt  --output text --query Plaintext | base64 --decode`
+
+
+echo "\n"
+echo "Credentials Decrypted"
+
+echo " This is Mariadb root password = $MARIADB_ROOT_PASSWORD "
+echo " This is Mariadb database name  = $MARIADB_DATABASE "
+echo " This is Mariadb User = $MARIADB_USER "
+echo " This is Mariadb password = $MARIADB_PASSWORD "
+
+
+# Demo Application Wordpress
+
+# Create a network
+docker network create bitnami-wordpress-tier
+
+# Mariadb Setup
+docker run --name mariadb --user=root -e MARIADB_DATABASE="$MARIADB_DATABASE" -e MARIADB_ROOT_PASSWORD="$MARIADB_ROOT_PASSWORD" -v /root/mariadb:/bitnami --network="bitnami-wordpress-tier" --restart unless-stopped -d bitnami/mariadb:latest
+
+# Wordpress Setup
+docker run --name bitnami-wordpress -u root --network="bitnami-wordpress-tier" -e WORDPRESS_DATABASE_NAME="$MARIADB_DATABASE" -e WORDPRESS_DATABASE_USER="root" -e WORDPRESS_DATABASE_PASSWORD="$MARIADB_ROOT_PASSWORD" --link mariadb:db -v /root/wordpress:/bitnami -p 8090:8080 --restart unless-stopped -d bitnami/wordpress:latest
+
+
+# END
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,18 @@
+# Important tools & commands
+
+# Ubuntu/Debian
+
+apt install -y ncdu
+cd /
+ncdu
+
+# Fedorora/Centos
+
+yum install -y ncdu
+
+
+# Networking (net cat)
+apt insatll -y nc
+yum install -y nc 
+netstat -plntu
+netstat -antp

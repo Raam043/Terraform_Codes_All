@@ -1,0 +1,47 @@
+#!/bin/bash
+#Purpose: AWS-CLI
+#OS: Ubuntu-18-LTS
+
+#https://linuxhint.com/install_aws_cli_ubuntu/
+#https://docs.aws.amazon.com/cli/latest/userguide/install-linux.html#install-linux-path
+
+sudo apt update -y
+
+sudo apt-get install python3-pip -y 
+
+sudo pip3 install awscli --upgrade --user
+
+python3 -m awscli --version
+
+#python3 -m awscli configure
+
+#This command inserts the path, ~/.local/bin in this example, at the front of the existing PATH variable.
+export PATH=~/.local/bin:$PATH
+
+#Reload the profile into your current session to put those changes into effect.
+
+#Bash – .bash_profile, .profile, or .bash_login
+
+#Zsh – .zshrc
+
+#Tcsh – .tcshrc, .cshrc or .login
+
+# We are Using Ubuntu
+ source ~/.profile
+ 
+ # AWS-CLI
+ aws --version
+
+#END
+
+
+##########################################################################################
+#!/bin/bash
+
+apt update -y
+apt  install awscli  -y
+apt install python3-pip -y
+pip3 install --upgrade --user awscli
+
+#END
+

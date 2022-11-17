@@ -1,0 +1,64 @@
+
+pipeline {
+    environment {
+    registry         = "registry.gitlab.com"   
+    account          = "quickbooks2018"
+    repo             = "gitlab-integration-with-jenkins"
+    tag              = "latest"
+    api_token_name   = "jenkins"
+    gitlab_api_token = credentials('gitlab_api_token')
+    
+  }
+    agent any
+   
+    stages {
+
+
+    stage('SCM Checkout') {
+    steps {
+
+        git branch: 'main', credentialsId: 'gitlab-integration-with-jenkins', url: 'git@gitlab.com:quickbooks2018/gitlab-integration-with-jenkins.git'
+        
+        }
+         }
+
+
+        stage('Docker Login With Gitlab') {
+            steps {
+                sh '''
+               
+                docker login -u $api_token_name -p $gitlab_api_token registry.gitlab.com
+                
+                '''
+             }
+               
+            }
+
+
+        stage('Pulling Image from Gitlab private Registry') {
+            steps {
+                sh '''
+                
+                docker pull $registry/$account/$repo:$tag
+                
+                '''
+             }
+               
+            }
+
+         stage('Deploying Application') {
+            steps {
+                sh '''
+                
+                ls
+                pwd
+                docker-compose up -d
+                
+                '''
+             }
+               
+            }      
+
+        
+    }
+}

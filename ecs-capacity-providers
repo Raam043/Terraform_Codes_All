@@ -1,0 +1,8 @@
+# https://gitmemory.com/issue/aws/containers-roadmap/631/778325348
+
+Well as always, as soon as I ask someone else a question I solve it myself...
+
+The issue was that I had AWS::AutoScaling::ScalingPolicy's assigned to my ASG. The ECS docs make it clear that this isn't allowed, removing the policies allowed the stack to deploy!
+
+
+# Make sure to use ECS Capacity providers no MANAGED AS Policy is assigned to ASG

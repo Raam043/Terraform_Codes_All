@@ -1,0 +1,15 @@
+# https://easylinuxtipsproject.blogspot.com/p/root-command-startup.html
+
+ vim /opt/captain.sh
+ 
+ #!/bin/sh
+ 
+ sleep 5
+ commands
+ 
+ #End
+ 
+ 
+ # Persistent Environment Variables
+ 
+ # https://unix.stackexchange.com/questions/117467/how-to-permanently-set-environmental-variables

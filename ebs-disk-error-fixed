@@ -1,0 +1,34 @@
+# https://unix.stackexchange.com/questions/315063/mount-wrong-fs-type-bad-option-bad-superblock
+
+
+
+I have a different process for this that replaced the bad superblock with one of the alternatives. FSCK can be a "lossy" process because FSCK may want to remove too much data or to remove data from a sensitive location (e.g. data directory for a data base) so there are times when I don't want to use it or it doesn't work.
+
+You can sudo yourself silly or just become root for the process. Just remember that when you are root, Linux assumes that you know what you're doing when you issue commands. If so directed, it will speedily delivery Mr. Bullet to Mr. Foot. Like many other things, with great power comes great responsibility. That concludes my warning on running your system as root.
+
+sudo -s
+
+fdisk -l
+Figure out which device - assuming /dev/sdc1 for this example along with EXT4 as its the most common for this explanation.
+
+fsck -N /dev/sdc1
+Your device and your file system (ZFS, UFS, XFS, etc.) may vary so know what you have first. Do not assume it's EXT4. Ignoring this step can cause you problems later if it's NOT an EXT4 file system.
+
+fsck.ext4 -v /dev/sdc1
+Get your error message which says the superblock is bad. You don't want to do this if your superblock is OK.
+
+mke2fs -n /dev/sdc1
+This will output the alternate superblocks stored on your partition.
+
+*Superblock backups stored on blocks:
+32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208*
+Pick an alternate superblock - keep in mind that the first one is the default and its bad so let's not use that one. You will also want to pick one from the list you get from your partition. Do not use the example. Your superblocks may be stored elsewhere.
+
+e2fsck -b 98304 /dev/sdc1
+Reboot and see if this worked. If not try the next superblock on the list. I've had to go the third or fourth one a couple of times.
+
+e2fsck -b 163840 /dev/sdc1
+Now try the command to validate the disk again. See if you get the same messabout about bad superblocks.
+
+fsck.ext4 -v /dev/sdc1
+Keep trying until you either run out of superblocks or it works. If you run out, you likely have bigger issues and I hope you have good backups. You can try running FSCK at that point.

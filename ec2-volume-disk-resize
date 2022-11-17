@@ -1,0 +1,29 @@
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/recognize-expanded-volume-linux.html
+
+#############
+# Disk Usage
+#############
+cd /
+du -d 1 -h
+
+########
+# Step1
+########
+# Use growpart for ext4
+                
+lsblk
+               #disk       #partition number
+sudo growpart /dev/nvme0n1 1
+
+########
+# Step 2
+########
+df -hT   ---> pick the mount one
+
+sudo resize2fs /dev/nvme0n1p1
+
+
+check df -hT
+fdisk -l
+
+

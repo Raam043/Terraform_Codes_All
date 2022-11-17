@@ -1,0 +1,20 @@
+# https://askubuntu.com/questions/153144/how-can-i-recursively-search-for-directory-names-with-a-particular-string-where
+
+/ (recursive)
+
+find / -type d | grep "directory name" && find / -type f | grep "file name"
+
+find / -type d | grep "abid"
+
+find / -type f | grep "abid"
+
+# Present Directory (recursive)
+
+find . -type d | grep "abid"
+
+find . -type f | grep "abid"
+
+
+
+# Specific Word
+grep -irow database

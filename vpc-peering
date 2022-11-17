@@ -1,0 +1,56 @@
+# https://github.com/terraform-aws-modules/terraform-aws-vpc/issues/555
+
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+  name   = "${var.env_name}-cluster"
+...
+}
+
+resource "aws_vpc_peering_connection" "main_vpc" {
+  // This is necessary because DB instances are in separate VPC
+
+  vpc_id        = module.vpc.vpc_id
+  peer_vpc_id   = var.main_vpc_id
+
+  auto_accept = true
+
+  accepter {
+    allow_remote_vpc_dns_resolution = true
+  }
+
+  requester {
+    allow_remote_vpc_dns_resolution = true
+  }
+
+}
+
+resource "aws_route" "r" {
+  for_each = toset(module.vpc. private_route_table_ids)
+
+  route_table_id                       = each.key 
+  destination_cidr_block         = var.main_vpc_cidr
+  vpc_peering_connection_id = aws_vpc_peering_connection.main_vpc.id
+}
+
+
+locals {
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
+}
+
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "2.66.0"
+
+  name                 = ...
+  cidr                 = "10.0.0.0/16"
+  azs                  = data.aws_availability_zones.available.names
+  private_subnets      = local.private_subnets
+  enable_dns_hostnames = true
+  ...
+}
+
+resource "aws_route" "foo" {
+  count                     = length(local.private_subnets)
+  route_table_id = module.vpc.private_route_table_ids[count.index]
+  destination_cidr_block    = var.peered_cidr
+  vpc_peering_connection_id = aws_vpc_peering_connection.bar.id

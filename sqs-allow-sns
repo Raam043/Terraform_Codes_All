@@ -1,0 +1,14 @@
+{
+      "Sid": "arn:aws:sns:us-east-1:313421539520:aws-sns-dukaan-dev-notification-topic",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": "SQS:SendMessage",
+      "Resource": "arn:aws:sqs:us-east-1:123456789:aws-sqs-cloudgeeks-dev-push-notification-queue",
+      "Condition": {
+        "ArnLike": {
+          "aws:SourceArn": "arn:aws:sns:us-east-1:123456789:aws-sns-cloudgeeks-dev-notification-topic"
+        }
+      }
+    }

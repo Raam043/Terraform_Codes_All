@@ -1,0 +1,11 @@
+# https://www.educative.io/edpresso/how-to-delete-remote-branches-in-git
+
+git branch -a
+# *master
+#  test
+#  remote/origin/master
+#  remote/origin/test
+
+git push origin --delete test
+# To <URL of your repository>.git
+#  - [deleted]         test

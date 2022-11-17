@@ -1,0 +1,46 @@
+# https://stackoverflow.com/questions/53919530/aws-ec2-user-data-script-to-allocate-elastic-ip
+
+{
+"Version": "2012-10-17",
+"Statement": [
+    {
+        "Effect": "Allow",
+        "Action": [
+            "ec2:DescribeAddresses",
+            "ec2:AllocateAddress",
+            "ec2:DescribeInstances",
+            "ec2:AssociateAddress"
+        ],
+        "Resource": "*"
+    }
+]
+}
+
+
+
+#!/bin/bash
+INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+MAXWAIT=3
+ALLOC_ID=<your eip allocation id>
+AWS_DEFAULT_REGION=<your region>
+
+export AWS_DEFAULT_REGION
+
+# Make sure the EIP is free
+echo "Checking if EIP with ALLOC_ID[$ALLOC_ID] is free...."
+ISFREE=$(aws ec2 describe-addresses --allocation-ids $ALLOC_ID --query Addresses[].InstanceId --output text)
+STARTWAIT=$(date +%s)
+while [ ! -z "$ISFREE" ]; do
+    if [ "$(($(date +%s) - $STARTWAIT))" -gt $MAXWAIT ]; then
+        echo "WARNING: We waited 30 seconds, we're forcing it now."
+        ISFREE=""
+    else
+        echo "Waiting for EIP with ALLOC_ID[$ALLOC_ID] to become free...."
+        sleep 3
+        ISFREE=$(aws ec2 describe-addresses --allocation-ids $ALLOC_ID --query Addresses[].InstanceId --output text)
+    fi
+done
+
+# Now we can associate the address
+echo Running: aws ec2 associate-address --instance-id $INSTANCE_ID --allocation-id $ALLOC_ID --allow-reassociation}
+aws ec2 associate-address --instance-id $INSTANCE_ID --allocation-id $ALLOC_ID

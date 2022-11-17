@@ -1,0 +1,181 @@
+#!/bin/bash
+#Purpose: Installation of ECS-AGENT, ec2 instance joins the ECS Cluster
+# Note on the SG (security group) open the http port 80
+mkdir -p /etc/ecs
+touch /etc/ecs/ecs.config
+echo ECS_CLUSTER=ecs-demo > /etc/ecs/ecs.config
+
+
+
+
+# Update the packages
+
+sudo yum install -y docker
+sudo service docker start
+sudo usermod -aG docker $USER
+
+sudo yum install -y ecs-init
+sudo stop ecs   2>&1   > /dev/null
+sudo start ecs
+
+#Note: ecs agent will not start unless docker daemon will not start & running
+
+
+# To check the logs
+# cd /var/log/ecs/
+# tail -f ecs*
+
+# ECS_endpoints
+
+# ecs agent listen on port 51678
+
+sudo yum install -y jq
+
+#Note ECS Cluster default port is 51678
+
+curl http://localhost:51678/v1/metadata | jq
+
+# Check the tasks metadata
+
+curl http://localhost:51678/v1/tasks | jq
+
+
+
+##End
+
+
+
+
+# Creating an SSH Keypair
+
+#OSX / Linux: Create a keypair
+
+1. aws ec2 create-key-pair --key-name Linux-Academy --query 'KeyMaterial' \
+--output text > ~/.ssh/Linux-Academy.pem
+
+2. chmod 400 ~/.ssh/Linux-Academy.pem
+
+# Verify the keypair has been created
+
+3. aws ec2 describe-key-pairs --key-name Linux-Academy
+
+# (Optionally)Delete the keypair
+
+4. aws ec2 delete-key-pair --key-name Linux-Academy
+
+# List IAM users
+
+5. aws iam list-users
+
+
+############################################# ECS Command Line #############################################################################
+
+# Deep Dive with Amazon ECS
+# Clusters
+# Create a cluster (Note: It will use FarGate by default)
+
+aws ecs create-cluster --cluster-name deepdive
+
+#List all clusters
+
+aws ecs list-clusters
+
+# A deeper look into the cluster's state
+
+aws ecs describe-clusters --clusters deepdive
+
+# (Optionally)Delete the cluster
+
+aws ecs delete-cluster --cluster deepdive
+
+# ● Do not delete it now unless you're experimenting on your own
+
+# List IAM users
+
+5. aws iam list-users
+
+# Create the S3 bucket
+
+6. aws s3api create-bucket --bucket cloudgeeks.ca-learning-ecs
+
+# Copy the ECS config file you downloaded to the S3 bucket
+
+7. aws s3 cp ecs.config s3://cloudgeeks.ca-learning-ecs/ecs.config
+
+# Verify the ECS config is in the S3 bucket
+
+8. aws s3 ls s3://cloudgeeks.ca-learning-ecs
+
+
+
+### ecs command line ###
+
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html
+
+# https://aws.amazon.com/premiumsupport/knowledge-center/sftp-iam-user-cli/
+
+aws iam create-instance-profile --instance-profile-name Linux-Academy-ECS-Instance-Role
+
+aws iam create-role --role-name Linux-Academy-ECS-Instance-Role --assume-role-policy-document file://ec2-trust-relationship.json --description "EC2 Access"
+
+# Note: Attaching AWS Managed Policy ARN is fixed
+
+aws iam attach-role-policy --role-name Linux-Academy-ECS-Instance-Role --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+aws iam attach-role-policy --role-name Linux-Academy-ECS-Instance-Role --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+
+# Add the s3access role to the s3access-profile instance profile.
+
+aws iam add-role-to-instance-profile --instance-profile-name Linux-Academy-ECS-Instance-Role --role-name Linux-Academy-ECS-Instance-Role
+
+
+
+
+cat <<EOF >ec2-trust-relationship.json
+{
+  "Version": "2008-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+
+# Create a keypair
+
+aws ec2 create-key-pair --key-name Linux-Academy --query 'KeyMaterial' --output text > ~/.ssh/Linux-Academy.pem
+
+# Create a s3 bucket
+
+aws s3 mb s3://cloudgeeks.ca-ecs-learning
+OR
+aws s3api create-bucket --bucket cloudgeeks.ca-ecs-learning
+
+aws s3 cp ecs.config s3://cloudgeeks.ca-ecs-learning/
+aws s3 ls s3://cloudgeeks.ca-ecs-learning
+
+
+aws ec2 run-instances --image-id ami-2b3b6041 --count 1 \
+--instance-type t2.micro --iam-instance-profile Name=Linux-Academy-ECS-Instance-Role \
+--key-name Linux-Academy --subnet-id subnet-0703816245a8a7457    \
+--user-data file://copy-ecs-config-to-s3
+
+# Get EC2 instance status
+
+aws ec2 describe-instance-status --instance-id i-0eb3791217abd83ef
+
+# Verify the EC2 instance is now part of the deepdive cluster
+
+aws ecs list-container-instances --cluster deepdive
+
+# Terminate EC2 instance
+
+ aws ec2 terminate-instances --instance-ids i-0eb3791217abd83ef
+
+#END

@@ -1,0 +1,3 @@
+git log --oneline
+git reset --hard HEAD~1   # See your commit which you want to undo
+git push -f

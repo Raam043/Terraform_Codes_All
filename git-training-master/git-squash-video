@@ -1,0 +1,11 @@
+# https://www.youtube.com/watch?v=viY1BbKZhSI&ab_channel=StudyZone
+
+# https://www.youtube.com/watch?v=RwvTrSm7zEY&ab_channel=ColtSteele
+
+git log --online
+
+git rebase -i LogID
+
+<Note: Comment which you do not want or Squashed>
+
+git push origin branchname -f

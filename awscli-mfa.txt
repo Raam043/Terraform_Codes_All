@@ -1,0 +1,138 @@
+# MFA AWSCLI Policy
+# https://aws.amazon.com/premiumsupport/knowledge-center/authenticate-mfa-cli/
+
+
+
+{
+    "Statement": [
+        {
+            "Action": [
+                "iam:ListUsers",
+                "iam:GetAccountPasswordPolicy",
+                "iam:ListVirtualMFADevices"
+            ],
+            "Effect": "Allow",
+            "Resource": "*",
+            "Sid": "AllowViewAccountInfo"
+        },
+        {
+            "Action": [
+                "iam:ChangePassword",
+                "iam:GetUser"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:iam::*:user/${aws:username}",
+            "Sid": "AllowManageOwnPasswords"
+        },
+        {
+            "Action": [
+                "iam:CreateAccessKey",
+                "iam:DeleteAccessKey",
+                "iam:ListAccessKeys",
+                "iam:UpdateAccessKey"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:iam::*:user/${aws:username}",
+            "Sid": "AllowManageOwnAccessKeys"
+        },
+        {
+            "Action": [
+                "iam:CreateVirtualMFADevice",
+                "iam:DeleteVirtualMFADevice"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:iam::*:mfa/${aws:username}",
+            "Sid": "AllowManageOwnVirtualMFADevice"
+        },
+        {
+            "Action": [
+                "iam:DeactivateMFADevice",
+                "iam:EnableMFADevice",
+                "iam:ListMFADevices",
+                "iam:ResyncMFADevice"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:iam::*:user/${aws:username}",
+            "Sid": "AllowManageOwnUserMFA"
+        },
+        {
+            "Condition": {
+                "BoolIfExists": {
+                    "aws:MultiFactorAuthPresent": "false"
+                }
+            },
+            "Effect": "Deny",
+            "NotAction": [
+                "iam:CreateVirtualMFADevice",
+                "iam:EnableMFADevice",
+                "iam:GetUser",
+                "iam:ListMFADevices",
+                "iam:ListVirtualMFADevices",
+                "iam:ResyncMFADevice",
+                "iam:ListUsers",
+                "iam:ChangePassword",
+                "sts:GetSessionToken"
+            ],
+            "Resource": "*",
+            "Sid": "DenyAllExceptListedIfNoMFA"
+        }
+    ],
+    "Version": "2012-10-17"
+}
+
+
+
+
+
+
+
+
+
+#!/bin/bash
+# Usage: source scriptname MFA-TOKEN-FROM-YOUR-MOBILE-DEVICE
+
+set -x
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+MFA_ARN=arn:aws:iam::$AWS_ACCOUNT_ID:mfa/cloudgeeks
+AWS_DEFAULT_REGION="us-east-1"
+AWS_PROFILE="cloudgeeks"
+
+
+
+
+
+##################################################################################################################################
+# Actual Aws Secret Access keys from AWS Console, Use AWS Configure to add these ~/.aws # Note: STS call will be done through this
+##################################################################################################################################
+# Note: Use ---> aws configure (default)
+####################################
+# AWS_ACCESS_KEY_ID=MUHAMMAD
+# AWS_SECRET_ACCESS_KEY=JANNAT
+# AWS_DEFAULT_REGION=us-east-1
+
+#################################################
+# Note: Use ---> aws configure --profile Muhammad
+##################################################
+# AWS_ACCESS_KEY_ID=QURAN
+# AWS_SECRET_ACCESS_KEY=ALLAH
+# AWS_DEFAULT_REGION=us-east-1
+
+##############################################################################################################
+# This will create Temporary tokens for You, these will be considerd as TRUE to access your resources in AWS.
+##############################################################################################################
+aws sts get-session-token --serial-number $MFA_ARN --token-code $1 > token.txt
+
+cat token.txt
+
+export AWS_ACCESS_KEY_ID=$(cat token.txt | awk '{print $2}') && echo "export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" > updated_token.txt
+
+export AWS_SECRET_ACCESS_KEY=$(cat token.txt | awk '{print $4}') && echo "export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> updated_token.txt
+
+export AWS_SESSION_TOKEN=$(cat token.txt | awk '{print $5}') && echo "export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" >> updated_token.txt
+
+export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} && echo "export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}" >> updated_token.txt
+
+export AWS_PROFILE=${AWS_PROFILE} && echo "export AWS_PROFILE=${AWS_PROFILE}" >> updated_token.txt
+
+set +x
+# END

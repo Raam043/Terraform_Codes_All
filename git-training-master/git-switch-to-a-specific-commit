@@ -1,0 +1,7 @@
+git log
+
+git checkout <commithash> .
+
+# https://stackoverflow.com/questions/2007662/rollback-to-an-old-git-commit-in-a-public-repo
+
+As was pointed out in the comments, using git checkout without specifying a branch will leave you in a "no branch" state. Use git checkout <commit> -b <branchname> to checkout into a branch, or git checkout <commit> . to checkout into the current branch

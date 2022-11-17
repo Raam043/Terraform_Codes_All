@@ -1,0 +1,284 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowUserToSeeBucketListInTheConsole",
+            "Action": [
+                "s3:ListAllMyBuckets",
+                "s3:GetBucketLocation"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::*"
+            ]
+        },
+        {
+            "Sid": "AllowRootAndHomeListingOfCompanyBucket",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::cloudgeeks.ca-sftp"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "s3:prefix": [
+                        "",
+                        "Zuora/*",
+                        "QA/*",
+                        "Mulesoft/*"
+                    ],
+                    "s3:delimiter": [
+                        "/"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "AllowListingOfUserFolder",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::cloudgeeks.ca-sftp"
+            ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [
+                        "Zuora/*",
+                        "QA/*",
+                        "Mulesoft/*"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "AllowAllS3ActionsInUserFolder",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:PutObject",
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::cloudgeeks.ca-sftp/Mulesoft/*"
+            ]
+        }
+    ]
+}
+
+
+# https://www.crybit.com/give-access-only-to-a-folder/
+
+###################################################################################
+
+# SFTP Policy
+
+# https://docs.aws.amazon.com/transfer/latest/userguide/requirements-roles.html
+
+
+
+Create IAM Policies and Roles for SFTP
+
+When you create an SFTP user, you make a number of decisions about user access. These include which Amazon S3 buckets the user can access, what portions of each S3 bucket are accessible, and what privileges the user has (for example, PUT or GET).
+
+To set access, you create a resource-based IAM policy and an IAM role that provides that access information.
+
+As part of this, you provide access for your SFTP user to the Amazon S3 bucket that is the target or source for file operations. To do this, take the following high-level steps, described in detail later:
+
+    Create an IAM role, and as part of this establish a trust relationship with the AWS Transfer for SFTP service.
+
+    In your new IAM role, create a new IAM policy. Later in this topic, you can find a sample policy that enables access to the S3 bucket to use for SFTP.
+
+    Attach the new IAM policy to the IAM role.
+
+    (Optional) Create a scope-down policy to further restrict user access. Later in this topic, you can find a sample scope-down policy to restrict user access to the home directory.
+
+Following, you can find more details about how to do this process.
+
+To create an IAM policy for AWS Transfer for SFTP
+
+    Open the IAM console at https://console.aws.amazon.com/iam/.
+
+    In the navigation pane, choose Roles, and then choose Create role.
+
+    On the Create role page, make sure that AWS service is chosen.
+
+    Choose Transfer from the list of services, and then choose Next: Permissions.
+
+    In the Attach permissions policies section, choose Create Policy.
+
+    On the Create Policy page, choose the JSON tab.
+
+    In the editor that appears, replace the contents of the editor with the IAM policy that you want attach to the IAM role.
+
+    Following are two sample IAM policies that you can use. Copy and paste one of these policies into the editor, then save the policy to use in later steps.
+
+    The following sample policy grants read-write access to objects in your S3 bucket.
+
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AllowListingOfUserFolder",
+                "Action": [
+                    "s3:ListBucket",
+                    "s3:GetBucketLocation"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::bucket_name"
+                ]
+            },
+            {
+                "Sid": "HomeDirObjectAccess",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:PutObject",
+                    "s3:GetObject",
+                    "s3:DeleteObjectVersion",
+                    "s3:DeleteObject",
+                    "s3:GetObjectVersion"
+                ],
+                "Resource": "arn:aws:s3:::bucket_name/*"
+            }
+        ]
+    }
+
+    The following sample policy is a scope-down policy that limits users' access to their home directories only.
+
+    Note
+
+    For the scope-down policy to lock SFTP users to their home directory, make sure that the path you assign for their home directory contains the username value. For example, if username is set to "bob", then the home directory needs to contain "bob".
+
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AllowListingOfUserFolder",
+                "Action": [
+                    "s3:ListBucket"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::${transfer:HomeBucket}"
+                ],
+                "Condition": {
+                    "StringLike": {
+                        "s3:prefix": [
+                            "Optional_path/${transfer:HomeFolder}/*",
+                            "Optional_path/${transfer:HomeFolder}"
+                        ]
+                    }
+                }
+            },
+            {
+                "Sid": "HomeDirObjectAccess",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:PutObject",
+                    "s3:GetObject",
+                    "s3:DeleteObjectVersion",
+                    "s3:DeleteObject",
+                    "s3:GetObjectVersion"
+                ],
+                "Resource": "arn:aws:s3:::${transfer:HomeDirectory}*"
+            }
+        ]
+    }     
+
+    Choose Review policy and provide a name and description for your policy and then choose Create policy.
+
+Next, you create an IAM role and attach the new IAM policy to it.
+
+To create an IAM role
+
+    In the navigation pane, choose Roles, and then choose Create role.
+
+    On the Create role page, make sure that AWS service is chosen.
+
+    Choose Transfer from the service list, and then choose Next: Permissions. This establishes a trust relationship between AWS Transfer for SFTP and AWS.
+
+    In the Attach permissions policies section, locate and choose the policy that you just created and choose Next: Tags.
+
+    (Optional) Enter a key and value for a tag, and choose Next: Review.
+
+    On the Review page, enter a name and description for your new role, and then choose Create role.
+
+Next, you establish a trust relationship between AWS Transfer for SFTP and AWS.
+
+To establish a trust relationship
+
+    In the IAM console, choose the role that you just created. (You need to click on the name of the role you created)
+
+    On the Summary page, choose Trust relationships, and then choose Edit trust relationship.
+
+    In the Edit Trust Relationship editor, make sure service is "transfer.amazonaws.com". The access policy is shown following.
+
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "transfer.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+        }
+      ]
+    }
+
+    Choose Update Trust Policy to update the access policy.
+
+You have now created an IAM role that allows SFTP to call AWS services on your behalf. You attached to the role the IAM policy that you created to give access to your SFTP user. In the Getting Started section, this role and policy are assigned to your SFTP user or users.
+
+Optionally, you can create a scope-down policy that limits users' access to their home directories only, as described earlier in this topic. For more information on scope-down policies, see Creating a Scope-Down Policy.
+
+For more general information about IAM roles, see Creating a Role to Delegate Permissions to an AWS Service in the IAM User Guide. To learn more about resource-based policies for S3 resources, see Managing Access Permissions to Your Amazon S3 Resources in the Amazon Simple Storage Service Developer Guide. 
+
+
+# Multiple S3 Bucket Access via SFTP
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListingOfUserFolder",
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetBucketLocation"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::cloudgeeks.ca-mulesoft",
+                "arn:aws:s3:::cloudgeeks.ca-zuora"
+            ]
+        },
+        {
+            "Sid": "OutboundArchiveSubfolders",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::cloudgeeks.ca-mulesoft/*",
+                "arn:aws:s3:::cloudgeeks.ca-zuora/Zuora/outbound/*",
+                "arn:aws:s3:::cloudgeeks.ca-zuora/Zuora/archive/*"
+            ]
+        },
+        {
+            "Sid": "InboundSubfolders",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::cloudgeeks.ca-zuora/Zuora/inbound/*"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,108 @@
+# AWS SSM Installation
+
+https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-manual-agent-install.html#agent-install-centos
+
+# AWS SSM Policy
+
+# https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-instance-profile.html
+
+# Centos 7
+
+# https://superuser.com/questions/769514/add-a-sudoer-non-interactively-from-command-line
+
+useradd -m asim
+useradd -m qasim
+useradd -m saqlain
+useradd -m taha
+useradd -m ssm-user
+
+cat <<EOF >> /etc/sudoers
+asim ALL=(ALL) NOPASSWD: ALL
+qasim ALL=(ALL) NOPASSWD: ALL
+saqlain ALL=(ALL) NOPASSWD: ALL
+taha ALL=(ALL) NOPASSWD: ALL
+ssm-user ALL=(ALL) NOPASSWD: ALL
+
+EOF
+
+
+
+ SSM Installation for UBUNTU-18 LocalVM
+https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-manual-agent-install.html#agent-install-ubuntu-snap
+
+sudo apt update -y
+
+mkdir /tmp/ssm
+
+cd /tmp/ssm
+
+wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+
+sudo dpkg -i /tmp/ssm/amazon-ssm-agent.deb
+
+sudo systemctl status amazon-ssm-agent
+
+sudo systemctl start amazon-ssm-agent
+
+sudo systemctl enable amazon-ssm-agent
+
+amazon-ssm-agent -register -code "Activation Code" -id "Activation ID" --region "us-east-1"
+
+# ssm-agent
+
+https://github.com/aws/amazon-ssm-agent/releases
+
+https://aws.amazon.com/premiumsupport/knowledge-center/install-ssm-agent-ec2-linux/
+
+Amazon Linux 2, RHEL7, and CentOS 7 (64 bit)
+#!/bin/bash
+cd /tmp
+sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+sudo systemctl enable amazon-ssm-agent
+sudo systemctl start amazon-ssm-agent
+
+Amazon Linux, CentOS 6 (64 bit)
+#!/bin/bash
+cd /tmp
+sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+sudo start amazon-ssm-agent
+
+Ubuntu 16 (Deb Installer), Debian 8 and 9
+#!/bin/bash
+mkdir /tmp/ssm
+cd /tmp/ssm
+wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+sudo dpkg -i /tmp/ssm/amazon-ssm-agent.deb
+sudo systemctl enable amazon-ssm-agent
+
+Ubuntu 14 (Deb installer)
+#!/bin/bash
+mkdir /tmp/ssm
+cd /tmp/ssm
+wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+sudo dpkg -i amazon-ssm-agent.deb
+sudo start amazon-ssm-agent
+Suse 12
+#!/bin/bash
+mkdir /tmp/ssm
+cd /tmp/ssm
+wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+sudo rpm --install amazon-ssm-agent.rpm
+sudo systemctl enable amazon-ssm-agent
+sudo systemctl start amazon-ssm-agent
+
+
+
+
+### Specific package ###
+
+#!/bin/bash
+mkdir /tmp/ssm
+cd /tmp/ssm
+wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/2.3.714.0/debian_amd64/amazon-ssm-agent.deb
+sudo dpkg -i /tmp/ssm/amazon-ssm-agent.deb
+sudo systemctl enable amazon-ssm-agent
+#END
+
+
+amazon-ssm-agent -register -code "Activation Code" -id "Activation ID" --region "us-east-1"

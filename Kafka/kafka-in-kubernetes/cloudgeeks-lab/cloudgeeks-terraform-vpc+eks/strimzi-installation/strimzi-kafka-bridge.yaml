@@ -1,0 +1,62 @@
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaBridge
+metadata:
+  name: cloudgeeks-ca-bridge
+  namespace: kafka
+  labels:
+    app: bridge
+spec:
+  replicas: 1
+  bootstrapServers: cloudgeeks-ca-kafka-kafka-bootstrap:9092
+  http:
+    port: 8080
+
+
+
+# Different Strimzi kafka bridge
+# Simple do kubectl edit deployment/cloudgeeks-ca-bridge-bridge -n kafka
+# kubectl rollout status deployment/cloudgeeks-ca-bridge-bridge -n kafka
+
+
+# kubectl expose deployment cloudgeeks-ca-bridge-bridge --type=NodePort  --protocol TCP --port 80 --target-port 8080 --name=cloudgeeks-ca-bridge-exposed  -n kafka
+
+# kubectl expose deployment cloudgeeks-ca-bridge-bridge --type=NodePort --name=cloudgeeks-kafka-exposed -n kafka
+
+
+
+
+
+
+
+
+
+
+
+# https://hub.docker.com/r/strimzi/kafka-bridge
+# Update the image of existing deployment # https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+
+# kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1 --record
+
+
+#  Container in a pod
+#  kubectl get pods POD_NAME_HERE -o jsonpath='{.spec.containers[*].name}'
+# ----> kubectl set image deployment/cloudgeeks-ca-bridge-bridge cloudgeeks-ca-bridge-bridge=strimzi/kafka-bridge:0.18.0 -n kafka --record
+# ----> kubectl set image pod/cloudgeeks-ca-bridge-bridge-d569c55f-dx7ww cloudgeeks-ca-bridge-bridge=strimzi/kafka-bridge:0.18.0 -n kafka --record
+
+
+
+# List
+# https://kubernetes.io/docs/tasks/access-application-cluster/list-all-running-container-images/
+# https://stackoverflow.com/questions/33924198/how-do-you-cleanly-list-all-the-containers-in-a-kubernetes-pod
+#
+
+#  Container in a pod
+#  kubectl get pods POD_NAME_HERE -o jsonpath='{.spec.containers[*].name}'
+#
+#  kubectl get pods cloudgeeks-ca-bridge-bridge-5694dc7dc5-8rpd2 -o jsonpath='{.spec.containers[*].name}' -n kafka
+#
+#  # Shell
+#  # https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-container/
+#  In a container which is in a POD
+#
+#  kubectl exec -it -n kafka cloudgeeks-ca-bridge-bridge-5694dc7dc5-8rpd2 --container cloudgeeks-ca-bridge-bridge -- /bin/bash

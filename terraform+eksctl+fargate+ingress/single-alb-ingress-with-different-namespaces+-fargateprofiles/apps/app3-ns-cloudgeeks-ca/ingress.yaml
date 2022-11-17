@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  namespace: cloudgeeks-ca
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/group.name: cloudgeeksca
+    alb.ingress.kubernetes.io/target-type: instance
+    kubernetes.io/ingress.class: alb
+    # Health Check Settings
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+  name: echoserver
+spec:
+  rules:
+    - host: app3.saqlainmushtaq.com
+      http: &echoserver_root
+        paths:
+          - backend:
+              serviceName: echoserver
+              servicePort: 80
+            path: /
+    - host: app3.saqlainmushtaq.com
+      http: *echoserver_root

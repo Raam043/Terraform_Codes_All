@@ -1,0 +1,199 @@
+#!/bin/bash
+# Purpose: Blue/Green Deployments with AWS CodeDeploy
+# OS Ubuntu 20.04
+# Maintainer DevOps Muhammad Asim
+
+######################
+# Docker Installation
+######################
+
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+rm -f get-docker.sh
+systemctl start docker
+systemctl enable docker
+
+#################################
+# Docker Compose v1 installation
+#################################
+curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+docker-compose --version
+
+
+#################################
+# Docker Compose V2 Installation
+#################################
+#########################################################################################
+# 1 Run the following command to download the current stable release of Docker Compose
+#########################################################################################
+
+mkdir -p ~/.docker/cli-plugins/
+curl -SL https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+
+ ###############################################
+ # 2 Apply executable permissions to the binary
+ ###############################################
+
+chmod +x ~/.docker/cli-plugins/docker-compose
+
+  ###############################################
+  # 3 Apply executable permissions to the binary
+  ###############################################
+
+docker compose version
+
+
+
+################################
+# CodeDeploy Agent Installation
+################################
+
+# https://docs.aws.amazon.com/codedeploy/latest/userguide/codedeploy-agent-operations-install-ubuntu.html
+
+apt update -y
+
+apt install ruby-full -y
+
+apt install wget -y
+
+wget https://bucket-name.s3.region-identifier.amazonaws.com/latest/install
+
+./install auto -v releases/codedeploy-agent-###.deb > /tmp/logfile
+
+service codedeploy-agent status
+
+service codedeploy-agent start
+
+service codedeploy-agent status
+
+
+INSTANCE_ID=$(cat /sys/devices/virtual/dmi/id/board_asset_tag)
+
+cat << EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml
+[agent]
+  collection_jitter = "0s"
+  debug = false
+  flush_interval = "1s"
+  flush_jitter = "0s"
+  hostname = ""
+  interval = "60s"
+  logfile = "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  logtarget = "lumberjack"
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  omit_hostname = false
+  precision = ""
+  quiet = false
+  round_interval = false
+
+[inputs]
+
+  [[inputs.disk]]
+    fieldpass = ["used_percent"]
+    tagexclude = ["mode"]
+    [inputs.disk.tags]
+      metricPath = "metrics"
+
+  [[inputs.logfile]]
+    destination = "cloudwatchlogs"
+    file_state_folder = "/opt/aws/amazon-cloudwatch-agent/logs/state"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-hup.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-hup.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-init.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-init.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-init-cmd.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-init-cmd.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cloud-init.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cloud-init.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cloud-init-output.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cloud-init-output.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-wire.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-wire.log"
+      pipe = false
+      timezone = "UTC"
+    [inputs.logfile.tags]
+      metricPath = "logs"
+
+  [[inputs.mem]]
+    fieldpass = ["used_percent"]
+    [inputs.mem.tags]
+      metricPath = "metrics"
+
+[outputs]
+
+  [[outputs.cloudwatch]]
+    force_flush_interval = "60s"
+    namespace = "CWAgent"
+    region = "us-east-1"
+    tagexclude = ["host", "metricPath"]
+    [outputs.cloudwatch.tagpass]
+      metricPath = ["metrics"]
+
+  [[outputs.cloudwatchlogs]]
+    force_flush_interval = "5s"
+    log_stream_name = "$INSTANCE_ID"
+    region = "us-east-1"
+    tagexclude = ["metricPath"]
+    [outputs.cloudwatchlogs.tagpass]
+      metricPath = ["logs"]
+
+[processors]
+
+  [[processors.ec2tagger]]
+    ec2_metadata_tags = ["InstanceId"]
+    refresh_interval_seconds = "0s"
+    [processors.ec2tagger.tagpass]
+      metricPath = ["metrics"]
+
+
+EOF
+
+LINE_OLD='/opt/aws/amazon-cloudwatch-agent/bin/start-amazon-cloudwatch-agent'
+LINE_NEW='/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent -config /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml'
+
+sed -i "s%$LINE_OLD%$LINE_NEW%g"  /etc/systemd/system/amazon-cloudwatch-agent.service
+
+systemctl daemon-reload
+
+systemctl start amazon-cloudwatch-agent
+
+systemctl enable amazon-cloudwatch-agent
+
+
+#END

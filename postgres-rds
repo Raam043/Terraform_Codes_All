@@ -1,0 +1,93 @@
+# aws postgresql rds
+
+# https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ConnectToPostgreSQLInstance.html
+
+
+psql \
+   --host=<DB instance endpoint> \
+   --port=<port> \
+   --username=<master username> \
+   --password \
+   --dbname=<database name> 
+
+######################
+# postgres CLI Client
+######################
+# Windows
+docker run --name postgres -w /root -e POSTGRES_PASSWORD=password -v "c:/users/Muhammad Asim/Desktop/postgres:/root" -id postgres:latest
+
+# Linux
+docker run --name postgres -v $PWD/postgres:/root -w /root -e POSTGRES_PASSWORD=password -id postgres:latest
+
+docker run --name postgres -e POSTGRES_PASSWORD=password -id postgres
+
+psql --host=cloudgeeks-postgres-us-east-1.rds.amazonaws.com --port=5432 --username=dbadmin  --password --dbname=postgres
+
+############################
+# Port Mapping with Postgres
+#############################
+docker run --name postgres-a -p 5432:5432 -w /root -e POSTGRES_PASSWORD=password -id postgres:latest 
+
+docker run --name postgres-b -p 5433:5432 -w /root -e POSTGRES_PASSWORD=password -id postgres:latest 
+
+psql --host localhost --port 5433 --username postgres --dbname=postgres --password
+
+psql --host localhost --port 5432 --username postgres --dbname=postgres --password
+
+
+
+psql --host postgres.muhammad-asim.tk \
+  --port 5444 \
+  --username postgres \
+  --password
+
+# List databases
+
+\l
+
+###############################
+# Drop DATABASE BEFORE RESTORE
+###############################
+
+# https://phoenixnap.com/kb/postgresql-drop-database#:~:text=The%20first%20method%20to%20remove,execute%20the%20DROP%20DATABASE%20command.
+DROP DATABASE IF EXISTS <database name>;
+
+#######################################################################################################
+# Best is to create a backup & restore from PGADMIN ---> backup location ---> /var/lig/pgadmin/storage
+#######################################################################################################
+
+# https://support.huaweicloud.com/intl/en-us/usermanual-rds/rds_09_0023.html
+
+#######
+# Dump
+#######
+pg_dump -h <public dns> -p <port> -U <my username> -f <name of dump file .sql> <name of my database>
+
+########
+# Import 
+########
+psql --host=<RDS_ADDRESS> --port=<DB_PORT> --username=root --dbname=postgres -c "create database <DB_NAME>;"
+
+psql --host=<RDS_ADDRESS> --port=<DB_PORT> --username=root --dbname=<DB_NAME> --file=<BACKUP_DIR>/backup.sql
+
+#############
+# List Tables
+#############
+Then, this shows all tables in the current schema:
+
+\dt
+
+###########################################
+# Existing database migration to other RDS
+###########################################
+# https://stackoverflow.com/questions/54046054/cannot-restore-postgresql-databases-got-database-already-exists-error
+
+# Export 
+# pg_dump
+pg_dump -v -Fc -h RDS_END_POINT -p 5432 -U USERNAME -f BACKUP-05-24-2022.sql DB_NAME
+
+
+# Import
+# pg_restore
+pg_restore -vcC -h RDS_END_POINT -p 5432 -U USERNAME -d DB_NAME < BACKUP-05-24-2022.sql
+

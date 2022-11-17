@@ -1,0 +1,25 @@
+{
+    "Version": "2012-10-17",
+    "Id": "http referer policy example",
+    "Statement": [
+        {
+            "Sid": "Allow get requests originating from *.cloudgeeks.ca",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+                "s3:GetObject*",
+                "s3:PutObject*"
+
+            ],
+            "Resource": "arn:aws:s3:::assets-dev.cloudgeeks.ca/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:Referer": [
+                        "https://assets-dev.cloudgeeks.ca/*",
+                        "http://cloudgeeks.ca.local/*"
+                    ]
+                }
+            }
+        }
+    ]
+}

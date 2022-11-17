@@ -1,0 +1,9 @@
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-cli-deleting-stack.html
+
+aws cloudformation ls
+
+aws cloudformation list-stacks
+
+aws cloudformation list-stacks | grep -i myteststack
+
+aws cloudformation delete-stack --stack-name myteststack

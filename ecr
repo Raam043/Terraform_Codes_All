@@ -1,0 +1,115 @@
+------------------------> TAGGING <---------------------------
+
+# https://stackoverflow.com/questions/43331418/aws-cli-ecr-list-images-get-newest
+# https://stackoverflow.com/questions/12204192/using-multiple-delimiters-in-awk
+
+aws ecr describe-images --repository-name dukaan/api-gateway --query 'sort_by(imageDetails,& imagePushedAt)[*]'
+
+
+API_GATEWAY_TAG=`aws ecr describe-images --repository-name cloudgeeks/api-gateway --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]'  --region us-east-1 | awk -F '["]' '{print $2}'`
+
+
+docker pull 458545444577854445112258833669774455882211255.dkr.ecr.us-east-1.amazonaws.com/cloudgeeks/api-gateway:"$API_GATEWAY_TAG"
+
+
+
+
+### Automation ###
+
+
+
+#!/bin/bash
+# Maintainer <Muhammad Asim quickbooks2018@gmail.com>
+# Update route53 record & Services
+# OS AmazonLinux2
+# Note: Role must be attached for ECR image pull/push ---> eureka-server role is setup
+
+
+# Docker Section
+
+# Docker Installation
+
+yum install -y docker 
+systemctl start docker
+systemctl enable docker
+
+# Existing containers & Images Clean Up
+
+docker rm -f $(docker ps -aq)  
+
+docker rmi -f $(docker images -aq)
+
+# docker run and Image
+
+# docker login
+$(aws ecr get-login --no-include-email --region us-east-1)
+
+# API Service
+API_GATEWAY_TAG=`aws ecr describe-images --repository-name cloudgeeks/api-gateway --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]'  --region us-east-1 | awk -F '["]' '{print $2}'`
+
+docker run --name api-service -h api.cloudgeeks.local --log-driver="awslogs" --log-opt awslogs-region="us-east-1" --log-opt awslogs-group="cloudgeeks/api-server" --log-opt awslogs-stream="api-server-log-stream" -p 80:8081 -p 8081:8081 --restart unless-stopped -e "SPRING_PROFILES_ACTIVE=qa" -d 1445445544558555555444444.dkr.ecr.us-east-1.amazonaws.com/cloudgeeks/api-gateway:"$API_GATEWAY_TAG"
+
+
+
+#END
+
+# Route53 Section
+
+localip=$(curl -fs http://169.254.169.254/latest/meta-data/local-ipv4)
+hostedzoneid="Canadalllksosouugg11455844222"
+file=/tmp/record.json
+
+#  API Service
+
+cat << EOF > $file
+{
+  "Comment": "Update the A record set",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "api.cloudgeeks.local",
+        "Type": "A",
+        "TTL": 10,
+        "ResourceRecords": [
+          {
+            "Value": "$localip"
+          }
+        ]
+      }
+    }
+  ]
+}
+EOF
+
+aws route53 change-resource-record-sets --hosted-zone-id $hostedzoneid --change-batch file://$file
+
+
+
+
+#######################################################################################################################################################
+
+
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/docker-basics.html
+
+
+Ensure you have installed the latest version of the AWS CLI and Docker. For more information, see the ECR documentation .
+
+    Retrieve the login command to use to authenticate your Docker client to your registry.
+    Use the AWS CLI:
+
+    $(aws ecr get-login --no-include-email --region us-west-2)
+
+Note: If you receive an "Unknown options: --no-include-email" error when using the AWS CLI, ensure that you have the latest version installed. Learn more 
+Build your Docker image using the following command. For information on building a Docker file from scratch see the instructions here 
+. You can skip this step if your image is already built:
+
+docker build -t cloudgeeks.ca/ecs .
+
+After the build completes, tag your image so you can push the image to this repository:
+
+docker tag cloudgeeks.ca/ecs:latest 898668804275.dkr.ecr.us-west-2.amazonaws.com/cloudgeeks.ca/ecs:latest
+
+Run the following command to push this image to your newly created AWS repository:
+
+docker push 898668804275.dkr.ecr.us-west-2.amazonaws.com/cloudgeeks.ca/ecs:latest

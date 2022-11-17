@@ -1,0 +1,10 @@
+# https://www.unixtutorial.org/test-tcp-connectivity-with-curl/
+
+curl -v telnet://127.0.0.1:22
+
+kubectl -n default run -it --rm --image=curlimages/curl curly -- sh
+
+curl -I internal-ingress-internal-lb-2010776812.us-east-1.elb.amazonaws.com
+
+curl -v telnet://internal-ingress-internal-lb-2010776812.us-east-1.elb.amazonaws.com:80
+

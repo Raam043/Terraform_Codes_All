@@ -1,0 +1,27 @@
+# https://docs.aws.amazon.com/AmazonS3/latest/dev/example-bucket-policies.html#example-bucket-policies-use-case-4
+
+# https://stackoverflow.com/questions/12824967/setting-up-a-cname-for-an-s3-bucket-using-amazon-route-53
+
+S3 CNAMEs require the bucket name to match the host name. If you want S3 to serve from imgs.langpai.me, you need to create a bucket named imgs.langpai.me. See the S3 documentation for more.
+
+You could create a CloudFront distribution to answer to imgs.langpai.me (see CloudFront CNAME support) have it and forward requests to langpai.s3.amazonaws.com. This would, of course, also incur CloudFront charges.
+
+{
+  "Version":"2012-10-17",
+  "Id":"http referer policy example",
+  "Statement":[
+    {
+      "Sid":"Allow get requests originating from www.example.com and example.com.",
+      "Effect":"Allow",
+      "Principal":"*",
+      "Action":["s3:GetObject","s3:GetObjectVersion"],
+      "Resource":"arn:aws:s3:::DOC-EXAMPLE-BUCKET/*",
+      "Condition":{
+        "StringLike":{"aws:Referer":["http://www.example.com/*","http://example.com/*"]}
+      }
+    }
+  ]
+}
+
+
+

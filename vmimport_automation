@@ -1,0 +1,146 @@
+#!/bin/bash
+# Maintainer: DevOS_ Muhammad Asim
+# Purpose: VM Import to AWS
+
+
+Bucket_Name="asim-devops-lahore-pakistan"
+Region="us-east-1"
+VM_Image_Name="centos6.vmdk"
+
+
+
+echo -e "\nHi! DevOps Muhammad Asim here, Your S3 Bucket Name is "$Bucket_Name"\n"
+
+sleep 3
+
+echo -e "\nYour s3 bucket is going to be created in "$Region"\n"
+
+aws s3api create-bucket --bucket "$Bucket_Name" --region "$Region" 2>&1 > /dev/null
+
+if [ "$?" = "0" ]
+then
+
+    echo -e "\nYour Bucket is successfuly created\n"
+    else
+
+echo -e "\nBucket Name is not available\n"
+
+exit
+fi
+
+if [ "$?" = "0" ]
+     then
+     echo -e "\nI am copying your "$VM_Image_Name" to "$Bucket_Name"\n"
+
+    sleep 3
+
+### COPY DATA TO S3 BUCKET ###
+     aws s3 cp "$VM_Image_Name" s3://"$Bucket_Name"
+     else
+     echo "Your "$VM_Image_Name" copy to "$Bucket_Name" is unsuccessfull"
+     exit 127
+     fi
+
+
+echo -e "\nVM Image Name must be .vmdk format, you provided this name "$VM_Image_Name"\n"
+
+
+
+echo -e "\nNow I am Creating  Trust policy for your VM, please wait ...\n"
+
+cat << EOF > trust-policy.json
+{
+   "Version": "2012-10-17",
+   "Statement": [
+      {
+         "Effect": "Allow",
+         "Principal": { "Service": "vmie.amazonaws.com" },
+         "Action": "sts:AssumeRole",
+         "Condition": {
+            "StringEquals":{
+               "sts:Externalid": "vmimport"
+            }
+         }
+      }
+   ]
+}
+EOF
+
+
+sleep 3
+
+echo -e "\nIAM Creating the IAM Role for "$VM_Image_Name"\n"
+
+aws iam create-role --role-name vmimport --assume-role-policy-document "file://trust-policy.json"
+
+
+sleep 3
+
+echo -e "\nIAM Creating the IAM Policy: role-policy.json, This policy will be attached to the role vmimport\n"
+
+cat << EOF > role-policy.json
+{
+   "Version":"2012-10-17",
+   "Statement":[
+      {
+         "Effect":"Allow",
+         "Action":[
+            "s3:GetBucketLocation",
+            "s3:GetObject",
+            "s3:ListBucket" 
+         ],
+         "Resource":[
+            "arn:aws:s3:::${Bucket_Name}",
+            "arn:aws:s3:::${Bucket_Name}/*"
+         ]
+      },
+      {
+         "Effect":"Allow",
+         "Action":[
+            "ec2:ModifySnapshotAttribute",
+            "ec2:CopySnapshot",
+            "ec2:RegisterImage",
+            "ec2:Describe*"
+         ],
+         "Resource":"*"
+      }
+   ]
+}
+EOF
+
+sleep 3 
+
+echo -e "\nNow I am attaching the policy, with IAM Role: vmimport\n"
+
+aws iam put-role-policy --role-name vmimport \
+                        --policy-name vmimport \
+                        --policy-document "file://role-policy.json"
+
+
+echo -e "\nBegin VM Image Import\n"               
+
+cat << EOF > containers.json
+[
+  {
+    "Description": "${VM_Image_Name}",
+    "Format": "vmdk",
+    "UserBucket": {
+        "S3Bucket": "${Bucket_Name}",
+        "S3Key": "${VM_Image_Name}"
+    }
+}]
+EOF
+
+sleep 3
+
+aws ec2 import-image --disk-containers "file://containers.json"
+
+
+
+# Extra
+# https://docs.aws.amazon.com/vm-import/latest/userguide/vmimport-image-import.html
+# aws ec2 describe-import-image-tasks --import-task-ids import-ami-0fcc5d30fef8f571e
+# "${Bucket_Name}/${VM_Image_Name}"
+
+
+#END

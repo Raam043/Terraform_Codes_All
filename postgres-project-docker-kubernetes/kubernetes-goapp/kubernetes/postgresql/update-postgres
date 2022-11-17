@@ -1,0 +1,180 @@
+# Must read dokcerhub postgres
+-------------------------------
+https://hub.docker.com/_/postgres
+
+
+# Step-1
+# https://stackoverflow.com/questions/33924198/how-do-you-cleanly-list-all-the-containers-in-a-kubernetes-pod
+
+# Always See how many containers are running in Pod
+
+kubectl get pods POD_NAME_HERE -o jsonpath='{.spec.containers[*].name}'
+
+kubectl get pods postgres-database-0 -o jsonpath='{.spec.containers[*].name}'
+
+
+# Step-2
+
+# https://stackoverflow.com/questions/39979880/kubectl-exec-into-container-of-a-multi-container-pod
+ Flags: -c, --container="": Container name. If omitted, the first container in the pod will be chosen -p, --pod="": Pod name -i, --stdin[=false]: Pass stdin to the container -t, --tty[=false]: Stdin is a TTY
+
+So i just used the container name from my manifest.yaml and it worked like charm. Hope this helps others ...
+
+Name of the container: ipengine-net-benchmark-iperf-server
+
+kubectl exec -ti ipengine-net-benchmark-488656591-gjrpc -c ipengine-net-benchmark-iperf-server /bin/bash
+
+
+# Take a Shell in Pod container with container name
+
+
+kubectl exec -it postgres-database-0 -c postgres-database -n default /bin/bash 
+
+
+# Take a Shell in Pod container (if there is only 1 container running it works with PODNAME)
+
+kubectl exec -it postgres-database-0 -n default /bin/bash 
+
+# Postgres default config in alpine
+https://stackoverflow.com/questions/46981073/how-to-run-postgres-in-a-docker-alpine-linux-container
+
+FROM postgres:10.0-alpine
+
+USER postgres
+
+RUN chmod 0700 /var/lib/postgresql/data &&\
+    initdb /var/lib/postgresql/data &&\
+    echo "host all  all    0.0.0.0/0  md5" >> /var/lib/postgresql/data/pg_hba.conf &&\
+    echo "listen_addresses='*'" >> /var/lib/postgresql/data/postgresql.conf &&\
+    pg_ctl start &&\
+    psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'main'" | grep -q 1 || psql -U postgres -c "CREATE DATABASE main" &&\
+    psql -c "ALTER USER postgres WITH ENCRYPTED PASSWORD 'mysecurepassword';"
+
+EXPOSE 5432
+
+postgres:11-alpine   configurations
+###
+
+default
+--------
+cd /var/lib/postgresql/data/pgdata
+
+/etc/init.d/
+
+# Reload configurations in postgres
+
+# https://github.com/docker-library/postgres/issues/217
+
+docker exec -it {postgres_container}  psql -U postgres -c "SELECT pg_reload_conf();"
+
+# defaults to postgres dbname
+##########################################################
+psql -U postgres -d mydbname -c "SELECT pg_reload_conf();"
+##########################################################
+
+Option_2
+
+# https://www.heatware.net/databases/postgresql-reload-config-without-restarting/
+
+su postgressu -c "pg_ctl reload" - postgres
+
+
+
+which pg_ctl
+/usr/bin/pg_ctl reload
+
+
+###################################################################
+
+# https://stackoverflow.com/questions/39460085/docker-alpine-images-basic-commands-are-not-working
+
+The rc-update tool is a part of the openrc package
+
+apk add openrc
+
+
+
+# https://wiki.alpinelinux.org/wiki/Alpine_Linux_Init_System
+
+rc-update add <service> <runlevel>
+
+rc-update del <service> <runlevel>
+
+rc-service <service> <start stop restart>
+
+Equivalent to /etc/init.d/service <start stop restart>
+rc-status
+
+
+Show List of run levels on Alpine Linux
+If you want to show the list of all run levels on your Alpine Linux, type the following command:
+
+list run levels
+----------------
+# rc-status --list
+Outputs:
+#rc-status --list
+boot
+nonetwork
+default
+sysinit
+shutdown
+
+
+list all services
+-------------------
+bash-5.1# rc-service --list
+bash-5.1# ps aux
+PID   USER     TIME  COMMAND
+    1 postgres  0:00 postgres
+   49 postgres  0:00 postgres: checkpointer
+   50 postgres  0:00 postgres: background writer
+   51 postgres  0:00 postgres: walwriter
+   52 postgres  0:00 postgres: autovacuum launcher
+   53 postgres  0:00 postgres: stats collector
+   54 postgres  0:00 postgres: logical replication launcher
+   57 root      0:00 /bin/bash
+  179 root      0:00 /bin/bash
+  200 root      0:00 ps aux
+
+
+
+
+# linux
+https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/osmanagement/proc_restart.html
+
+ps aux
+
+In the ps command output, find the process you want to restart and note its PID number. In the example, the PID is 1234.
+To send the CONTINUE signal to the stopped process, type the following:
+kill -19 1234
+
+
+Substitute the PID of your process for the 1234. The -19 indicates the CONTINUE signal. This command restarts the process in the background. If the process can run in the background, you are finished with the procedure. If the process must run in the foreground (as a vi session would), you must proceed with the next step.
+To bring the process in to the foreground, type the following:
+
+fg 1234
+
+
+# Kill a process with service name
+-----------------------------------
+pkill -9 postgres
+
+pkill -19 postgres
+
+
+# PG ADMIN
+-----------
+
+kubectl get pods -n default -o wide
+
+https://stackoverflow.com/questions/8288823/query-a-parameter-postgresql-conf-setting-like-max-connections
+SHOW max_connections;
+
+
+# pg-admin connection get the container name
+
+
+kubectl get pods POD_NAME_HERE -o jsonpath='{.spec.containers[*].name}'
+
+Note: container name is the Hostname or put the Ip-address of Pod

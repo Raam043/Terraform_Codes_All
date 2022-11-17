@@ -1,0 +1,62 @@
+1. Eureka-Server AMI	
+
+2. IAM Role for EC2  with permissions to update Route53
+
+3. Route53 Script
+
+#!/bin/bash
+# Maintainer <Muhammad Asim quickbooks2018@gmail.com>
+# Update route53 record
+localip=$(curl -fs http://169.254.169.254/latest/meta-data/local-ipv4)
+hostedzoneid="Z06148743O2A3HZEEBY23"
+file=/tmp/record.json
+cat << EOF > $file
+{
+  "Comment": "Update the A record set",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "eureka-server.cloudgeeks.ca.local",
+        "Type": "A",
+        "TTL": 30,
+        "ResourceRecords": [
+          {
+            "Value": "$localip"
+          }
+        ]
+      }
+    }
+  ]
+}
+EOF
+
+aws route53 change-resource-record-sets --hosted-zone-id $hostedzoneid --change-batch file://$file
+
+#END
+
+
+---> eureka-service   ---> application.properties
+                                                  spring.application.name=cnn.cloudgeeks.ca.local
+                                                  server.port=8080
+                                                  eureka.instance.hostname=eureka-server.cloudgeeks.ca.local
+                                                  eureka.client.serviceUrl.defaultZone=http://eureka-server.cloudgeeks.ca.local/eureka/
+                                                  
+                      ---> Application.java
+                                                  package cnn.cloudgeeks.ca.local;
+
+                                                  import org.springframework.boot.SpringApplication;
+                                                  import org.springframework.boot.autoconfigure.SpringBootApplication;
+                                                  import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+
+                                                  @EnableDiscoveryClient
+
+                                                  @SpringBootApplication
+                                                  public class Application {
+
+	                                                public static void main(String[] args) {
+	                                               	SpringApplication.run(Application.class, args);
+                                                 }
+
+                                               }
+

@@ -1,0 +1,50 @@
+#https://help.ns1.com/hc/en-us/articles/360017511293-What-is-the-difference-between-CNAME-and-ALIAS-records-
+
+
+
+What is the difference between CNAME and ALIAS records?
+2 years ago Updated
+The primary difference between a CNAME record and an ALIAS record is not in the result—both record types point to another DNS record—but in how they resolve the target DNS record when queried. In short, one is safe to use at the zone apex (ex. naked domain, such as example.com) and the other is not. 
+
+About CNAME records
+A CNAME record points a DNS name (such as www.example.com) to another DNS name (such as lb.example.net). This introduces a performance penalty since at least one additional DNS lookup must be performed to resolve the target (lb.example.net). If neither record has ever been queried by the recursive resolver, there is an even bigger impact on time as the full DNS hierarchy must be traversed for both records.
+
+For example:
+You (as the DNS client or stub resolver) query your recursive resolver for www.example.com.
+Your recursive resolver queries the root name server for www.example.com.
+The root name server refers your recursive resolver to the .com Top-Level Domain (TLD) authoritative server.
+Your recursive resolver queries the .com TLD authoritative server for www.example.com.
+The .com TLD authoritative server refers your recursive server to the authoritative servers for example.com.
+Your recursive resolver queries the authoritative servers for www.example.com, and receives lb.example.net as the answer.
+Your recursive resolver caches the answer, and returns it to you. 
+You now issue a second query to your recursive resolver for lb.example.net.
+Your recursive resolver queries the root name server for lb.example.net.
+The root name server refers your recursive resolver to the .net Top-Level Domain (TLD) authoritative server.
+Your recursive resolver queries the .net TLD authoritative server for lb.example.net.
+The .net TLD authoritative server refers your recursive server to the authoritative servers for example.net.
+Your recursive resolver queries the authoritative servers for lb.example.net, and receives an IP address as the answer.
+Your recursive resolver caches the answer, and returns it to you.
+Each of these steps consumes at least several milliseconds—typically more, depending on network conditions. This can add up to a considerable amount of time spent waiting for the final, actionable answer of an IP address.
+
+ 
+About ALIAS records
+With an ALIAS record, the process is the same of that of a CNAME record query, except the authoritative server for, say, example.com performs steps 1 through 13 automatically—returning the final answer of an IP address. This offers two advantages and one significant drawback:
+
+Advantages of an ALIAS record
+Decreased time to final answer resolution.
+In most cases, the authoritative servers for example.com are more powerful and have faster internet connectivity than your personal computer and connection. Therefore, they can traverse the DNS hierarchy and retrieve the final answer much faster.
+
+Answer looks like an A record.
+Since an ALIAS record returns the final answer consisting of one or more IP addresses, it can be used anywhere an A record can be used—including the zone apex. This makes it more flexible than a CNAME which cannot be used at the zone apex. 
+Disadvantages of an ALIAS record
+Geo-targeting information is lost.
+Since it is the authoritative server for example.com (issuing the queries for lb.example.net), then any intelligent routing functionality on the lb.example.net record will act upon the location of the authoritative server instead of your location. The EDNS0 edns-client-subnet option does not apply here. This means that you may be potentially mis-routed. For example, if you are in New York and the authoritative server for example.com is in California, then lb.example.net will think you are in California, and will return an answer that is distinctly sub-optimal for you in New York.
+One important thing to note is that NS1 collapses CNAME records provided they all fall within the NS1 system, i.e., NS1’s nameservers are authoritative for both the CNAME and the target record.
+
+Collapsing simply means that the NS1 nameserver will return the full chain of records, from CNAME to final answer, in a single response. This eliminates all the additional lookup steps, and allows you to use CNAME records, even in a nested configuration, without any performance penalty.
+
+Further, NS1 supports a unique record type called a linked record. This is basically a symbolic link within DNS that acts as an ALIAS record might, except with sub-microsecond resolution speed.  To use a linked record, create the target record as you usually would (any type) and create a second record that points to it, selecting the linked record option.
+
+Linked records can cross domain (zone) boundaries and account boundaries within NS1 and offer a powerful way to organize and optimize your DNS record structure.
+
+For more information, refer to following eLearning article on the NS1 website:  https://ns1.com/resources/cname

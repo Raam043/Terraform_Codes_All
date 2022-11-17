@@ -1,0 +1,95 @@
+
+# https://github.com/rebuy-de/aws-nuke  
+# https://github.com/rebuy-de/aws-nuke/releases
+
+
+
+
+
+Note: Set account alias
+########################
+
+1. aws iam list-account-aliases
+
+2. aws iam create-account-alias --account-alias examplecorp
+
+3. aws-nuke-v2.14.0-linux-amd64 -c config.yml --profile default --no-dry-run
+
+
+
+
+
+
+config.yml
+---
+regions:
+  - "us-east-1"
+  - "us-east-2"
+  - "us-west-1"
+  - "us-west-2"
+  - "ap-east-1"
+  - "ap-south-1"
+  - "ap-north-east-2"
+  - "ap-south-east-1"
+  - "ap-south-east-2"
+  - "ap-northeast-1"
+  - "ca-central-1"
+  - "eu-central-1"
+  - "eu-west-1"
+  - "eu-west-2"
+  - "eu-west-3"
+  - "eu-north-1"
+  - "me-south-1"
+  - "sa-east-1"
+account-blacklist:
+- 1234567890
+
+resource-types:
+  # don't nuke IAM users
+  excludes:
+  - IAMUser
+
+accounts:
+  PUT-YOUR-ACCOUNT-NUMBER-HERE-FOR-DESTRUCTION: {}
+  
+  
+  
+  
+  
+  ##### Terraform ####
+
+# https://registry.terraform.io/modules/diodonfrost
+
+# https://registry.terraform.io/modules/diodonfrost/lambda-nuke/aws/2.8.0
+
+# https://github.com/diodonfrost/terraform-aws-lambda-nuke
+
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+
+module "nuke-everything" {
+  source                         = "diodonfrost/lambda-nuke/aws"
+  name                           = "nuke-everything" 
+  cloudwatch_schedule_expression = "cron(0 22 ? * MON-SUN *)"
+  exclude_resources              = "iam"
+  older_than                     = "0d"
+}
+
+aws_regions = "us-east-1","us-east-2","us-west-1","us-west-2","ap-east-1","ap-south-1","ap-north-east-2","ap-south-east-1","ap-south-east-2","ap-northeast-1","ca-central-1","eu-central-1","eu-west-1","eu-west-2","eu-west-3","eu-north-1","me-south-1","sa-east-1"
+aws_regions = us-east-1,us-east-2,us-west-1,us-west-2,ap-east-1,ap-south-1,ap-north-east-2,ap-south-east-1,ap-south-east-2,ap-northeast-1,ca-central-1,eu-central-1,eu-west-1,eu-west-2,eu-west-3,eu-north-1,me-south-1,sa-east-1
+
+module "nuke-everything" {
+  source                         = "diodonfrost/lambda-nuke/aws"
+  name                           = "nuke-everything"
+  aws_regions                    = ["us-east-1","us-east-2"]
+  cloudwatch_schedule_expression = "cron(0 22 ? * MON-SUN *)"
+  exclude_resources              = "iam"
+  older_than                     = "0d"
+}
+
+# AWS Region List
+us-east-1,us-east-2,us-west-1,us-west-2,ap-east-1,ap-south-1,ap-north-east-2,ap-south-east-1,ap-south-east-2,ap-northeast-1,ca-central-1,eu-central-1,eu-west-1,eu-west-2,eu-west-3,eu-north-1,me-south-1,sa-east-1
+

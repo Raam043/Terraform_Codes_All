@@ -1,0 +1,23 @@
+### PGADMIN
+
+docker run --name pgadmin -e PGADMIN_DEFAULT_EMAIL="quickbooks2018@gmail.com" -e PGADMIN_DEFAULT_PASSWORD="asimarain" --network="postgres" -p 8090:80 -id dpage/pgadmin4:latest
+
+Note: localhost:8090/  -----------------------------------------> Must put Slash
+
+#############################
+# Query Tool Select Database
+#############################
+Select * FROM api_keys
+limit 10
+
+
+# Read Only Permissions
+https://stackoverflow.com/questions/760210/how-do-you-create-a-read-only-user-in-postgresql
+
+# Create a Connection
+# connection-name anynameyouwant
+#username asim
+#password 12345678
+#dbname   postgres
+
+#END

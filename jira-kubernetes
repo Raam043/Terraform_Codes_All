@@ -1,0 +1,83 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: jeera
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: jeera
+    spec:
+      containers:
+        - name: jeera
+          image: cptactionhank/atlassian-jira
+          securityContext:
+            runAsUser: 0
+          env:
+            - name: X_PROXY_NAME
+              value: "jeera.cloudgeeks.ca.com"
+            - name: X_PROXY_PORT
+              value: "443"
+            - name: X_PROXY_SCHEME
+              value: "https"
+            - name: X_PROXY_SECURE
+              value: "true"
+          ports:
+            - name: http-port
+              containerPort: 8080
+          volumeMounts:
+            - name: jeera-home
+              mountPath: "/var/atlassian/jira"
+      volumes:
+        - name: jeera-home
+          persistentVolumeClaim:
+            claimName: jeera-storage
+
+kubectl apply -f jeera.yaml
+
+###############################################################
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: jeera
+provisioner: kubernetes.io/aws-ebs
+allowVolumeExpansion: true
+parameters:
+  type: gp2
+  zones: us-west-2a, us-west-2b, us-west-2c
+
+kubectl apply -f storage.yml
+##############################################################
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jeera-storage
+  labels:
+    app: jeera
+spec:
+  storageClassName: jeera
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+kubectl apply -f volume.yaml
+###############################################################
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: jeera
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: jeera
+
+kubectl apply -f jeera-service.yaml

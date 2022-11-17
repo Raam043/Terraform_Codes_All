@@ -1,0 +1,177 @@
+kubectl apply -f storage.yaml
+
+nano storage.yaml
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: confluence
+provisioner: kubernetes.io/aws-ebs
+allowVolumeExpansion: true
+parameters:
+  type: gp2
+  zones: us-west-2b
+
+
+######################################################################
+
+kubectl apply -f volume.yaml
+
+nano volume.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: confluence-storage
+  labels:
+    app: confluence
+spec:
+  storageClassName: confluence
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+############################################################################
+
+kubectl apply -f confluence-if-new-persistent-dynamic-volume.yaml
+
+nano confluence-if-new-persistent-dynamic-volume.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: confluence
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: confluence
+    spec:
+      containers:
+        - name: confluence
+          image: atlassian/confluence-server
+          securityContext:
+            runAsUser: 0
+          env:
+            - name: CATALINA_CONNECTOR_PROXYNAME
+              value: "confluence-eks.cloudgeeks.ca.com"
+            - name: CATALINA_CONNECTOR_PROXYPORT
+              value: "443"
+            - name: CATALINA_CONNECTOR_SCHEME
+              value: "https"
+            - name: CATALINA_CONNECTOR_SECURE
+              value: "true"
+          ports:
+            - name: http-port
+              containerPort: 8090
+          volumeMounts:
+            - name: confluence-home
+              mountPath: "/var/atlassian/application-data/confluence"
+      volumes:
+        - name: confluence-home
+          persistentVolumeClaim:
+            claimName: confluence-storage
+
+
+###################################################################################
+
+kubectl apply -f confluence-if-existing-persistent-volume.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: confluence
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: confluence
+    spec:
+      containers:
+        - name: confluence
+          image: atlassian/confluence-server
+          securityContext:
+            runAsUser: 0
+          env:
+            - name: CATALINA_CONNECTOR_PROXYNAME
+              value: "confluence-eks.cloudgeeks.ca.com"
+            - name: CATALINA_CONNECTOR_PROXYPORT
+              value: "443"
+            - name: CATALINA_CONNECTOR_SCHEME
+              value: "https"
+            - name: CATALINA_CONNECTOR_SECURE
+              value: "true"
+          ports:
+            - name: http-port
+              containerPort: 8090
+          volumeMounts:
+            - name: confluence-home
+              mountPath: "/var/atlassian/application-data/confluence"
+      volumes:
+        - name: confluence-home
+          awsElasticBlockStore:
+              volumeID: vol-0ca9b2e353b6692ea
+
+################################################################################
+
+
+kubectl apply -f confluence.yaml
+
+nano confluence.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: confluence
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: confluence
+    spec:
+      containers:
+        - name: confluence
+          image: atlassian/confluence-server
+          securityContext:
+            runAsUser: 0
+          env:
+            - name: CATALINA_CONNECTOR_PROXYNAME
+              value: "confluence-eks.cloudgeeks.ca.com"
+            - name: CATALINA_CONNECTOR_PROXYPORT
+              value: "443"
+            - name: CATALINA_CONNECTOR_SCHEME
+              value: "https"
+          ports:
+            - name: http-port
+              containerPort: 8090
+          volumeMounts:
+            - name: confluence-home
+              mountPath: "/var/atlassian/application-data/confluence"
+      volumes:
+        - name: confluence-home
+          persistentVolumeClaim:
+            claimName: efs
+
+
+########################################################################################
+
+kubectl apply -f confluence-service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: confluence
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8090
+  selector:
+    app: confluence
+
+#############################################################################################

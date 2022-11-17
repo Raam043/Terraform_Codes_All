@@ -1,0 +1,256 @@
+#CUSTOM PASSWORD
+----------------
+https://scottlinux.com/2012/09/01/encode-or-decode-base64-from-the-command-line/
+
+To encode text to base64, use the following syntax:
+
+$ echo -n 'scottlinux.com rocks' | base64
+c2NvdHRsaW51eC5jb20gcm9ja3MK
+To decode, use base64 -d. To decode base64, use a syntax like the following:
+
+$ echo -n c2NvdHRsaW51eC5jb20gcm9ja3MK | base64 -d
+scottlinux.com rocks
+
+
+
+############################################################################################
+echo -n 'cloudgeeks.ca.com asim' | base64
+
+Y2xvdWRlbGxpZ2VudC5jb20gYXNpbQ==
+
+
+
+echo Y2xvdWRlbGxpZ2VudC5jb20gYXNpbQ== | base64 -d
+
+cloudgeeks.ca.com asim
+#############################################################################################
+
+#RANDOM PASSWORD
+----------------
+https://github.com/groovemonkey/project-based-kubernetes/blob/master/projects/wordpress/secrets/wp-mysql-secrets.yaml
+
+echo && PASS=$(cat /dev/urandom | env LC_CTYPE=C tr -dc [:alnum:] | head -c 15) && echo "Password: ${PASS}" && echo "Base64 encoded:" $(echo ${PASS} | base64)
+
+
+
+##### We are going to create a mysql-secret.yaml #####
+
+apiVersion: v1
+
+# This is a workaround for the broken  --from-file kubernetes abstraction
+# which doesn't sanely handle .env files
+# MYSQL_DATABASE and MYSQL_USER are both set to 'wordpress'
+
+# INSTRUCTIONS:
+# Generate a MYSQL_PASSWORD and MYSQL_ROOT_PASSWORD and then save this file before using it.
+# e.g.
+# echo && PASS=$(cat /dev/urandom | env LC_CTYPE=C tr -dc [:alnum:] | head -c 15) && echo "Password: ${PASS}" && echo "Base64 encoded:" $(echo ${PASS} | base64)
+
+kind: Secret
+metadata:
+  name: jira-db-secrets
+  namespace: default
+
+type: Opaque
+
+data:
+  # Example if you need multiple values
+  # MYSQL_DATABASE: d29yZHByZXNzCg==
+  # MYSQL_USER: d29yZHByZXNzCg==
+  # MYSQL_PASSWORD: SXhCMzRxRXF0dERubXpR
+
+  # This is base64 encoded -- the real password is NGiJi6A46YJTjTx
+  MYSQL_ROOT_PASSWORD: TkdpSmk2QTQ2WUpUalR4
+
+
+--------------------------------------------------------------------
+
+kubectl get secrets
+
+
+#https://github.com/groovemonkey/project-based-kubernetes/tree/master/projects/wordpress/manifests
+
+1. (A) kubectl apply -f storage.yaml
+
+nano storage.yaml
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: db-block-storage
+provisioner: kubernetes.io/aws-ebs
+allowVolumeExpansion: true
+parameters:
+  type: gp2
+  zones: us-west-2b
+
+
+
+
+
+
+
+(B) kubectl apply -f mysql-volume-claim.yaml
+
+
+nano mysql-volume-claim.yaml
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-volume
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: db-block-storage
+
+
+2. kubectl apply -f mysql-replica-set.yaml
+
+nano mysql-replica-set.yaml
+
+---
+apiVersion: extensions/v1beta1
+kind: ReplicaSet
+metadata:
+  name: mysql
+  # labels so that we can bind a Service to this Pod
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: database
+        image: mysql:5.7
+        resources:
+          requests:
+            memory: 1Gi
+        args:
+          # We need this to prevent mysql from throwing up -- our DO volume will be mounted here
+          - "--ignore-db-dir=lost+found"
+        # A nice way to get a whole bunch of values from a k8s secret into a container's  environment variables
+        envFrom:
+          - secretRef:
+              name: jira-db-secrets
+        ## The old way (one for each value):
+        # env:
+        # # Use a secret, avoid having plaintext passwords all over your configs
+        # - name: MYSQL_ROOT_PASSWORD
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: wp-db-secrets
+        #       key: MYSQL_ROOT_PASSWORD
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+        ports:
+          - containerPort: 3306
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-volume
+
+
+3. kubectl apply -f mysql-service.yaml
+
+nano mysql-service.yaml
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  ports:
+  - port: 3306
+    protocol: TCP
+  selector:
+    app: mysql
+
+4. kubectl get pods -o wide
+
+kubectl exec -it mysql-ksmv8 -- bash
+
+5. mysql -u root -p  ---> (Note: provide original root password here ---> cloudgeeks.ca.com asim
+
+   CREATE DATABASE jira;
+   ctrl+D
+
+6. kubectl get replicasets
+   kubectl get secrets
+   kubectl get pods
+   kubectl get services
+   kubectl get ep ---> end point
+
+7. phpMyAdmin Deployment
+
+https://docs.oracle.com/cd/E52668_01/E88884/html/kubectl-pod-yaml-deployments.html
+
+Finally, define the pod where the phpMyAdmin container is loaded. Here, you can specify the Docker image that should be used for this container and the port that the container uses. You can also specify the environment variables required to run this image. Notably, the Docker image requires you to set the environment variable PMA_HOST, which should provide the IP address or resolvable domain name for the MySQL server. Since we cannot guess which IP address should be used here, we can rely on Kubernetes to take care of this, by providing the mysql-service name as the value here. Kubernetes automatically links the two pods using this service definition
+
+kubectl apply -f phpmyadmin-pod.yaml
+
+nano phpmyadmin-pod.yaml
+
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: phpmyadmin
+  labels:
+    name: phpmyadmin
+spec:
+  containers:
+    - name: phpmyadmin
+      image: phpmyadmin/phpmyadmin
+      env:
+        - name: PMA_HOST
+          value: mysql
+      ports:
+        - containerPort: 80
+          name: phpmyadmin
+
+
+
+
+
+
+
+kubectl apply -f phpmyadmin-service.yaml
+
+nano phpmyadmin-service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: phpmyadmin
+  name: phpmyadmin
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    name: phpmyadmin
+  type: NodePort
+
+
+8. kubectl get services
+
+9. kubectl get ep

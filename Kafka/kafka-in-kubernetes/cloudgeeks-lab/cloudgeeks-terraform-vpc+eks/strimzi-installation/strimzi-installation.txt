@@ -1,0 +1,294 @@
+# Operator Installation
+
+kubectl create ns kafka
+
+kubectl apply -f "https://strimzi.io/install/latest?namespace=kafka"
+
+
+
+# cloudgeeks-ca Installation with replication (Internal) ---> rack nodeport
+
+cat << EOF | kubectl apply -n kafka -f -
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: cloudgeeks-ca-kafka
+spec:
+  kafka:
+    version: 2.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external
+        port: 9094
+        type: nodeport
+        tls: false
+    rack:
+      topologyKey: topology.kubernetes.io/zone
+    storage:
+      type: jbod
+      volumes:
+      - id: 0
+        type: persistent-claim
+        size: 5Gi
+        deleteClaim: false
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      log.message.format.version: "2.6"
+  zookeeper:
+    replicas: 3
+    storage:
+      type: persistent-claim
+      size: 5Gi
+      deleteClaim: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+EOF
+
+
+
+
+
+
+
+
+# cloudgeeks-ca Installation with replication (external) ---> rack  ---> type Classic Load Balancer
+
+cat << EOF | kubectl create -n kafka -f -
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: cloudgeeks-ca-kafka
+spec:
+  kafka:
+    version: 2.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external
+        port: 9094
+        type: loadbalancer 
+        tls: false
+    rack:
+      topologyKey: topology.kubernetes.io/zone
+    storage:
+      type: jbod
+      volumes:
+      - id: 0
+        type: persistent-claim
+        size: 10Gi
+        deleteClaim: false
+    config:
+      offsets.topic.replication.factor: 2
+      transaction.state.log.replication.factor: 2
+      transaction.state.log.min.isr: 2
+      log.message.format.version: "2.6"
+  zookeeper:
+    replicas: 2
+    storage:
+      type: persistent-claim
+      size: 10Gi
+      deleteClaim: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+EOF
+
+
+# cloudgeeks-ca Installation with replication (external) ---> rack  ---> type Ingress
+
+WIP
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Examples
+##############################################################################################
+# External  ---> Ingress
+
+# External Ingress to be consumed by applications outside the kubernetes cluster
+# https://strimzi.io/docs/operators/latest/full/using.html#type-GenericKafkaListener-reference
+
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: my-cluster
+spec:
+  kafka:
+    #...
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external1
+        port: 9094
+        type: route
+        tls: true
+      - name: external2
+        port: 9095
+        type: ingress
+        tls: false
+        authentication:
+          type: tls
+        configuration:
+          bootstrap:
+            host: bootstrap.myingress.com
+          brokers:
+          - broker: 0
+            host: broker-0.myingress.com
+          - broker: 1
+            host: broker-1.myingress.com
+          - broker: 2
+            host: broker-2.myingress.com
+
+
+
+
+# LOGS & auto-create topics enable
+# https://github.com/strimzi/strimzi-kafka-operator/issues/2157
+
+
+
+
+# Internal
+# https://strimzi.io/examples/latest/kafka/kafka-persistent.yaml
+
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: my-cluster
+spec:
+  kafka:
+    version: 2.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      log.message.format.version: "2.6"
+    storage:
+      type: jbod
+      volumes:
+      - id: 0
+        type: persistent-claim
+        size: 100Gi
+        deleteClaim: false
+  zookeeper:
+    replicas: 3
+    storage:
+      type: persistent-claim
+      size: 100Gi
+      deleteClaim: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+
+######################################### DELETE ###############################################
+
+# Cluster Delete
+
+cat << EOF | kubectl delete -n kafka -f -
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: cloudgeeks-ca-kafka
+spec:
+  kafka:
+    version: 2.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external
+        port: 9094
+        type: nodeport
+        tls: false
+    rack:
+      topologyKey: topology.kubernetes.io/zone
+    storage:
+      type: jbod
+      volumes:
+      - id: 0
+        type: persistent-claim
+        size: 5Gi
+        deleteClaim: false
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      log.message.format.version: "2.6"
+      auto.create.topics.enable: "true"
+      log.retention.hours: 72
+  zookeeper:
+    replicas: 3
+    storage:
+      type: persistent-claim
+      size: 5Gi
+      deleteClaim: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+EOF
+
+
+# kubectl delete -f "https://strimzi.io/install/latest?namespace=kafka"
+# kubectl delete all --all -n kafka
+# kubectl delete namespace kafka

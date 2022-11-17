@@ -1,0 +1,14 @@
+$(aws ecr get-login --no-include-email --region us-east-1)
+
+
+# https://stackoverflow.com/questions/60583847/aws-ecr-saying-cannot-perform-an-interactive-login-from-a-non-tty-device-after
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+$aws --version
+
+aws-cli/2.0.30 Python/3.7.3 Linux/4.14.181-142.260.amzn2.x86_64 botocore/2.0.0dev34
+
+$aws ecr get-login-password --region your_region | docker login --username AWS --password-stdin Account_ID.dkr.ecr.your_region.amazonaws.com

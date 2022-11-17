@@ -1,0 +1,938 @@
+##################################STEP-1-START#########################################
+
+Setup IAM Role for EKS
+
+EKS_cloudgeeks.ca
+
+
+Custom VPC Setup via Cloudformation
+https://docs.aws.amazon.com/eks/latest/userguide/create-public-private-vpc.html
+
+https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-11-15/amazon-eks-vpc-sample.yaml
+
+
+
+https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2018-11-07/amazon-eks-vpc-sample.yaml
+
+
+
+
+
+
+https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
+
+
+1. Installing kubectl
+curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.12.7/2019-03-27/bin/linux/amd64/kubectl
+
+chmod +x kubectl
+
+mkdir bin
+
+cp kubectl bin/
+
+
+
+2. Installing AWS IAM authenticator ---> (This allows us to administor our EKS Clustor, using our IAM Identity)
+
+https://github.com/kubernetes-sigs/aws-iam-authenticator
+
+We are using the AWS Version of IAM authenticator ---> https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
+
+curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/aws-iam-authenticator
+
+chmod +x ./aws-iam-authenticator
+
+mkdir -p $HOME/bin && cp ./aws-iam-authenticator $HOME/bin/aws-iam-authenticator && export PATH=$HOME/bin:$PATH
+
+
+3. Now we need to configure kubectl for EKS ---> (make sure you have aws cli version 1.16)
+
+ aws --version
+aws-cli/1.16.102 Python/2.7.14 Linux/4.14.114-105.126.amzn2.x86_64 botocore/1.12.92
+
+Note: Update aws cli using PIP instead of YUM
+
+https://docs.aws.amazon.com/cli/latest/userguide/install-linux.html
+
+
+
+curl -O https://bootstrap.pypa.io/get-pip.py
+
+#Add an export command at the end of your profile script that's similar to the following example.
+export PATH=~/.local/bin:$PATH
+
+# Reload the profile into your current session to put those changes into effect.
+
+source ~/.bash_profile
+
+# Upgrade AWS CLI Version
+pip install awscli --upgrade --user
+
+
+4. Now we need to update our cubeconfig file
+
+# Set aws credentials
+AWS Cli installation
+https://www.osradar.com/install-aws-cli-ubuntu-18-04/
+
+aws configure
+
+Provide your user progmatic credentials
+
+than
+
+update our cubeconfig file
+
+IMPORTANT TO UPDATE YOUR ./kube
+################################################################
+### MUST ###
+---> aws eks update-kubeconfig --name cloudgeeks.ca-eks --region us-east-1 <---
+##################################################################
+https://docs.aws.amazon.com/eks/latest/userguide/troubleshooting.html
+
+
+Added new context arn:aws:eks:us-west-2:898668804275:cluster/eks-cloudgeeks.ca to /root/.kube/config
+
+kubectl config view
+
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://069ED5E1B13D5C06E60F75AFDE032409.sk1.us-west-2.eks.amazonaws.com
+  name: arn:aws:eks:us-west-2:898668804275:cluster/eks-cloudgeeks.ca
+contexts:
+- context:
+    cluster: arn:aws:eks:us-west-2:898668804275:cluster/eks-cloudgeeks.ca
+    user: arn:aws:eks:us-west-2:898668804275:cluster/eks-cloudgeeks.ca
+  name: arn:aws:eks:us-west-2:898668804275:cluster/eks-cloudgeeks.ca
+current-context: arn:aws:eks:us-west-2:898668804275:cluster/eks-cloudgeeks.ca
+kind: Config
+preferences: {}
+users:
+- name: arn:aws:eks:us-west-2:898668804275:cluster/eks-cloudgeeks.ca
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      args:
+      - --region
+      - us-west-2
+      - eks
+      - get-token
+      - --cluster-name
+      - eks-cloudgeeks.ca
+      command: aws
+      env: null
+
+
+------------------------------------
+Test Your EKS Cluster
+
+kubectl cluster-info
+
+Kubernetes master is running at https://069ED5E1B13D5C06E60F75AFDE032409.sk1.us-west-2.eks.amazonaws.com
+CoreDNS is running at https://069ED5E1B13D5C06E60F75AFDE032409.sk1.us-west-2.eks.amazonaws.com/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+
+
+##################################STEP-1-END#########################################
+
+#################################STEP-2-START########################################
+
+# Launching the EKS Worker Nodes
+
+https://docs.aws.amazon.com/eks/latest/userguide/getting-started-console.html
+
+https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-11-15/amazon-eks-nodegroup.yaml
+
+
+# https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2018-11-07/amazon-eks-nodegroup.yaml
+
+
+################################################################################################################
+curl -o aws-auth-cm.yaml https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-11-15/aws-auth-cm.yaml
+#################################################################################################################
+
+
+We will be using Cloudformation and we will deploy a stack for our worker nodes.
+
+---> Go to Cloudformation and use this URL to create this stack from the URL ---> https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2018-11-07/amazon-eks-nodegroup.yaml
+
+Note: For Amazon Optimized AMI ---> https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
+
+ami-0923e4b35a30a5f53 ---> This is Oregon ---> because we deployed our EKS Cluster ---> eks-cloudgeeks.ca    in Oregon.
+
+This is our Bucket automatically created in Oregon for this Cloudformation Template ---> cf-templates-7gd89mj54jv6-us-west-2
+
+These are regular ec2-instances you own and pay for it.
+
+
+---> From Cloudformation go to output section and copy the ARN ---> NodeInstanceRole
+
+#You provisioned the worker nodes from a Cloudformation ---> now time join these nodes ---> Your EKS Cluster ---> We need to apply AWS AUTHENTICATOR configuration map.
+
+arn:aws:iam::898668804275:role/EKS-cloudgeeks.ca-WorkerNodes-NodeInstanceRole-D68SD4Y88L82
+
+curl -O https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2018-11-07/aws-auth-cm.yaml
+
+NOTE: YOUR CLUSTER SECURITY GROUP MUST BE SEPRATE AND YOUR CONTROLLER SECURITY GROUP MUST BE SEPRATE.
+
+# Edit this file ---> replace the ARN ---> from Cloudformation output.
+
+
+kubectl apply -f aws-auth-cm.yaml 
+
+
+kubectl get nodes --watch
+
+kubectl get events --all-namespaces -o wide
+
+
+# ISSUES
+
+https://aws.amazon.com/premiumsupport/knowledge-center/eks-worker-nodes-cluster/
+
+
+
+How can I get my worker nodes to join my Amazon EKS cluster?
+Last updated: 2019-10-17
+
+My worker nodes won't join my Amazon Elastic Kubernetes Service (Amazon EKS) cluster? How can I resolve this issue?
+Short Description
+To get your worker nodes to join your Amazon EKS cluster, you must complete the following:
+
+Confirm that you have DNS support for your Amazon Virtual Private Cloud (Amazon VPC)
+Get the right permissions for the instance profile of your worker nodes
+Configure the user data for your worker nodes
+Verify that your worker nodes are in a subnet associated with your Amazon EKS cluster
+Update the aws-auth ConfigMap with the NodeInstanceRole of your worker nodes
+Meet the security group requirements of your worker nodes
+Set the tags for your worker nodes
+Confirm that your worker nodes can reach the API server endpoint for your Amazon EKS cluster
+Important: The following steps don't include the additional configurations needed to register worker nodes in your Amazon EKS cluster in environments where the following criteria are not met:
+
+In the VPC for your Amazon EKS cluster, the configuration parameter domain-name-servers is set to AmazonProvidedDNS. For more information, see DHCP Options Sets.
+You're using an Amazon EKS-optimized Linux Amazon Machine Image (AMI) for launching your worker nodes.
+Note: The Amazon EKS-optimized Linux AMI provides all necessary configurations, including a /etc/eks/bootstrap.sh bootstrap script for registering worker nodes to your Amazon EKS cluster.
+Resolution
+Confirm that you have DNS support for your VPC
+
+Confirm that the VPC for your Amazon EKS cluster has support for a DNS hostname and DNS resolution.
+
+If needed, view and update the DNS support attributes for your VPC.
+
+Get the right permissions for the instance profile of your worker nodes
+
+Attach the following AWS managed polices to the role associated with the instance profile of your worker nodes:
+
+AmazonEKSWorkerNodePolicy
+AmazonEKS_CNI_Policy
+AmazonEC2ContainerRegistryReadOnly
+To attach policies to roles, see Adding IAM Identity Permissions (Console).
+
+Configure the user data for your worker nodes
+
+Note: You don't have to configure the user data for your worker nodes if you're using AWS CloudFormation to launch your worker nodes.
+
+To configure user data for your worker nodes, specify the user data when you launch your Amazon Elastic Compute Cloud (Amazon EC2) instances.
+
+For example, if you’re using a third-party tool like Terraform, update the User data field to launch your Amazon EKS worker nodes with the following:
+
+#!/bin/bash
+set -o xtrace
+/etc/eks/bootstrap.sh ${ClusterName} ${BootstrapArguments}
+Important: Replace ${ClusterName} with the name of your Amazon EKS cluster. Replace ${BootstrapArguments} with additional bootstrap values, or leave this property blank.
+
+Verify that your worker nodes are in a subnet associated with your Amazon EKS cluster
+
+1.    Open the Amazon EKS console.
+
+2.    Choose Clusters, and then select your cluster.
+
+3.    In the Networking section, identify the subnets associated with your cluster.
+
+4.    Verify that your worker nodes are only part of the subnets listed in step 3.
+
+Update the aws-auth ConfigMap with the NodeInstanceRole of your worker nodes
+
+Verify that the aws-auth ConfigMap is configured correctly with the IAM role of your worker nodes (and not the instance profile).
+
+Meet the security group requirements of your worker nodes
+
+Confirm that the control plane security group and worker node security group are configured with recommended settings for inbound and outbound traffic.
+
+For more information, see Cluster Security Group Considerations.
+
+Set the tags for your worker nodes
+
+For the Tag property of your worker nodes, set key to kubernetes.io/cluster/clusterName and set value to owned.
+
+For more information, see Cluster VPC Considerations.
+
+Confirm that your worker nodes can reach the API server endpoint for your Amazon EKS cluster
+
+Consider the following:
+
+You can launch worker nodes in a subnet associated with a route table that has a route to the API endpoint through a NAT Gateway or internet gateway.
+If your worker nodes are launched in a restricted private network, then confirm that your worker nodes can reach the Amazon EKS API server endpoint.
+If your worker nodes are launched as part of a VPC using a custom DNS instead of AmazonProvidedDNS, then your worker nodes might not resolve the endpoint for the Amazon EKS cluster if public access to the endpoint is disabled and only private access is enabled. For more information, see Enabling DNS resolution for Amazon EKS cluster endpoints. 
+
+#################################STEP-2-END########################################
+
+Kubernetes DASH-BOARD
+
+#################################STEP-3-START######################################
+https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/
+
+https://github.com/kubernetes/dashboard
+
+https://github.com/kubernetes/dashboard/releases
+
+
+
+https://github.com/kubernetes/dashboard --------> main
+########################################################################################################################################
+Installing the Kubernetes Dashboard
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc7/aio/deploy/recommended.yaml
+Installing Heapster and InfluxDB
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/influxdb/heapster.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/influxdb/influxdb.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/heapster/master/deploy/kube-config/rbac/heapster-rbac.yaml
+Create an administrative account and cluster role binding
+kubectl apply -f eks-admin-service-account.yaml
+kubectl apply -f eks-admin-cluster-role-binding.yaml
+Start proxy
+kubectl proxy --address 0.0.0.0 --accept-hosts '.*' &  ---> Use this --->    kubectl proxy  &
+Get a token
+aws-iam-authenticator -i <cluster_name> token
+Log in
+http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/#!/login
+
+
+kubectl proxy  &
+
+netstat -antp
+
+aws-iam-authenticator -i eks-cloudgeeks.ca token
+
+yum install -y jq
+
+aws-iam-authenticator -i eks-cloudgeeks.ca token | jq -r .status.token
+###########################################################################################################################################
+
+
+# By default kubernetes dashboard user has very limited permissions
+
+# In order to login we need create and administrative account and cluster role binding 
+
+so we need to create a file eks-admin-service-account.yaml
+
+vim eks-admin-service-account.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eks-admin
+  namespace: kube-system
+
+
+kubectl apply -f eks-admin-service-account.yaml
+
+#Than we need to create cluster role binding ---> this will associate or link the service account we created above with the CLUSTER ADMIN ROLE.
+
+vim eks-admin-cluster-role-binding.yaml
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+ name: eks-admin
+roleRef:
+ apiGroup: rbac.authorization.k8s.io
+ kind: ClusterRole
+ name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: eks-admin	
+  namespace: kube-system
+
+
+
+kubectl apply -f eks-admin-cluster-role-binding.yaml
+
+kubectl proxy  &
+
+netstat -antp
+
+aws-iam-authenticator -i eks-cloudgeeks.ca token
+
+yum install -y jq
+
+aws-iam-authenticator -i eks-cloudgeeks.ca token | jq -r .status.token
+
+k8s-aws-v1.aHR0cHM6Ly9zdHMuYW1hem9uYXdzLmNvbS8_QWN0aW9uPUdldENhbGxlcklkZW50aXR5JlZlcnNpb249MjAxMS0wNi0xNSZYLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUE1Q1BHVlhDWlVBNzZXQVZBJTJGMjAxOTA1MjMlMkZ1cy1lYXN0LTElMkZzdHMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDE5MDUyM1QwMDA1MDBaJlgtQW16LUV4cGlyZXM9MCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QlM0J4LWs4cy1hd3MtaWQmWC1BbXotU2lnbmF0dXJlPTYwNjUxZmQ0YzI1M2RmN2U5Mzk1MWMxOGEwODM3NjFiNWNhNDA4NmU3MTM1ZjA5N2I4YWNlM2RiNjRhNGE5OTg
+
+
+http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/#!/login
+
+kubectl -n kube-system get svc -o wide
+
+
+Example Important Commands
+
+kubectl get pods --all-namespaces
+
+kubectl -n kube-system get svc -o wide
+
+kubectl get deployment --namespace=kube-system
+
+kubectl delete deployment heapster --namespace=kube-system
+
+###ISSUE###
+no endpoints available for service \"kubernetes-dashboard\"
+
+https://stackoverflow.com/questions/52893111/no-endpoints-available-for-service-kubernetes-dashboard
+
+https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#pod-network
+
+
+https://github.com/kubernetes/dashboard/issues/3322
+
+kubectl -n kube-system describe pod kubernetes-dashboard
+
+#################################STEP-3-END######################################
+
+
+EKS Important points
+
+1. For us-east-1 region the AMI for Kubernetes 1.12 is "ami-0200e65a38edfb7e1"
+  https://docs.aws.amazon.com/eks/latest/userguide/update-stack.html
+
+2.  "Enable DNS support"
+
+3.  "Enable DNS hostname "
+
+4. If either or both of the DNS hostname and DNS resolution support is set to false, the following occurs:
+- Instances with a public IP address do not receive corresponding public DNS hostnames.
+- The Amazon-provided DNS server cannot resolve Amazon-provided private DNS hostnames.
+- Instances receive custom private DNS hostnames if there is a custom domain name in the DHCP options set. If you are not using the Amazon-provided DNS server, your custom domain name servers must resolve the hostname as appropriate.
+For reference:
+- https://docs.aws.amazon.com/vpc/latest/userguide/vpc-dns.html#vpc-dns-support
+
+
+##########################################################################################################
+# https://aws.amazon.com/premiumsupport/knowledge-center/amazon-eks-cluster-access/
+
+3.    To allow designated_user to assume the role of cluster_creator, run the following command:
+
+aws sts assume-role –role-arn arn:aws:iam:11122223333:role/cluster_creator --role_session_name test
+The output shows the temporary IAM credentials for designated_user, who is using the assumed role of cluster_creator.
+
+4.    Use the temporary IAM credentials to set the AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN, and AWS_SECRET_ACCESS_KEY environment variables. See the following example:
+
+export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+export AWS_SESSION_TOKEN=EXAMPLETOKEN
+export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+The AWS CLI now prioritizes the credentials set in the environment variables and uses them to make calls to AWS services.
+
+5.    To verify that the AWS CLI is using the assumed role for cluster_creator, run the following command:
+
+aws sts get-caller-identity
+
+
+
+
+
+
+### Terraform EKS Networking ###
+https://learn.hashicorp.com/terraform/aws/eks-intro#base-vpc-networking
+
+
+# https://www.arangodb.com/docs/stable/tutorials-kubernetes-eks.html
+
+# https://www.codementor.io/slavko/kubernetes-cluster-on-aws-eks-lecygk6rl
+
+# EKS TAGGING REQUIREMENTS
+
+https://docs.aws.amazon.com/eks/latest/userguide/network_reqs.html
+
+##################################################################################################################
+# Worker Nodes Fail to Join Cluster
+
+https://docs.aws.amazon.com/eks/latest/userguide/troubleshooting.html
+
+The ClusterName in your worker node AWS CloudFormation template does not exactly match the name of the cluster you want your worker nodes to join. Passing an incorrect value to this field results in an incorrect configuration of the worker node's /var/lib/kubelet/kubeconfig file, and the nodes will not join the cluster. 
+
+
+# https://medium.com/getamis/customize-aws-eks-worker-node-ami-d7b3d203051
+
+
+###################################################################################################################
+### Amazon EKS with OIDC provider, IAM Roles for Kubernetes services accounts ###
+
+https://medium.com/@marcincuber/amazon-eks-with-oidc-provider-iam-roles-for-kubernetes-services-accounts-59015d15cb0c
+
+Amazon EKS with OIDC provider, IAM Roles for Kubernetes services accounts
+
+With the latest release of EKS (1.13 and 1.14), AWS Kubernetes control plane comes with support for IAM roles for service accounts. This feature allows us to associate an IAM role with a Kubernetes service account. We can now provision temporary credentials and then provide AWS permissions to the containers in any pod that uses that service account. Furthermore, we no longer need to provide extended permissions to the worker node IAM role so that pods on that node can call AWS APIs
+
+#####################################################################################################################
+
+
+### eksctl ###
+
+
+# https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html
+
+1. To install or upgrade eksctl on Linux using curl
+
+Download and extract the latest release of eksctl with the following command.
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+
+#######################################################################################
+eksctl create cluster --name=cloudgeeks.ca-eks --region=us-east-1 --node-type=t2.medium
+#######################################################################################
+
+2. Move the extracted binary to /usr/local/bin.
+
+sudo mv /tmp/eksctl /usr/local/bin
+
+3. Test that your installation was successful with the following command.
+
+eksctl version
+
+### Details ###
+https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html
+
+eksctl create cluster \
+--name prod \
+--version 1.14 \
+--region us-west-2 \
+--nodegroup-name standard-workers \
+--node-type t3.medium \
+--nodes 3 \
+--nodes-min 1 \
+--nodes-max 4 \
+--ssh-access \
+--ssh-public-key my-public-key.pub \
+--managed
+
+# Note: Managed mean managed node group by EKS
+
+https://eksctl.io/usage/vpc-networking/
+
+# Create a key-pair
+
+#!/bin/bash
+
+mkdir ~/.ssh 2>&1 >/dev/null
+
+aws ec2 create-key-pair --key-name cloudgeeks.ca-eks --query 'KeyMaterial' --output text > ~/.ssh/cloudgeeks.ca-eks.pem
+
+#END
+
+# https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-creation-errors/
+
+
+# Create a key-pair cloudgeeks.ca-eks\
+##################################################
+eksctl create cluster \
+--name cloudgeeks.ca-eks \
+--version 1.15 \
+--region us-east-1 \
+--vpc-cidr 10.11.0.0/16 \
+--node-private-networking \
+--nodegroup-name workers \
+--node-type t2.medium \
+--nodes 2 \
+--nodes-min 1 \
+--nodes-max 4 \
+--ssh-access \
+--zones us-east-1a,us-east-1b,us-east-1c \
+--ssh-public-key cloudgeeks.ca-eks
+
+###################################################
+
+# Don't specify the version, it will launch with latest eks available version on aws
+
+# Delete an eks cluster
+################################################################
+eksctl delete cluster --region=us-east-1 --name=cloudgeeks.ca-eks
+#################################################################
+
+############################################################################################################################
+# Existing EKS VPC
+
+eksctl create cluster \
+  --vpc-private-subnets=subnet-0ff156e0c4a6d300c,subnet-0426fb4a607393184 \
+  --vpc-public-subnets=subnet-0153e560b3129a696,subnet-009fa0199ec203c37
+
+To create a cluster using 3x private subnets and make initial nodegroup use those subnets, run:
+
+eksctl create cluster \
+  --vpc-private-subnets=subnet-0ff156e0c4a6d300c,subnet-0549cdab573695c03,subnet-0426fb4a607393184 \
+  --node-private-networking
+
+To create a cluster using 4x public subnets, run:
+
+eksctl create cluster \
+  --vpc-public-subnets=subnet-0153e560b3129a696,subnet-0cc9c5aebe75083fd,subnet-009fa0199ec203c37,subnet-018fa0176ba320e45
+############################################################################################################################
+
+
+# To deploy the ALB Ingress Controller to an Amazon EKS cluster
+
+# https://docs.aws.amazon.com/eks/latest/userguide/alb-ingress.html
+
+Tag the subnets in your VPC that you want to use for your load balancers so that the ALB Ingress Controller knows that it can use them. For more information, see Subnet Tagging Requirement. If you deployed your cluster with ekctl, then the tags are already applied.
+
+All subnets in your VPC should be tagged accordingly so that Kubernetes can discover them.
+
+Key	Value
+kubernetes.io/cluster/<cluster-name>
+
+shared
+
+Public subnets in your VPC should be tagged accordingly so that Kubernetes knows to use only those subnets for external load balancers.
+
+Key	                        Value
+kubernetes.io/role/elb       1
+
+Private subnets in your VPC should be tagged accordingly so that Kubernetes knows that it can use them for internal load balancers:
+
+Key	                                      Value
+kubernetes.io/role/internal-elb            1
+
+2. Create an IAM OIDC provider and associate it with your cluster. If you don't have eksctl version 0.14.0 or later installed, complete the instructions in Installing or Upgrading eksctl to install or upgrade it. You can check your installed version with eksctl version.
+
+eksctl utils associate-iam-oidc-provider \
+    --region us-east-1 \
+    --cluster cloudgeeks.ca-eks \
+    --approve
+
+3. Create an IAM policy called ALBIngressControllerIAMPolicy for the ALB Ingress Controller pod that allows it to make calls to AWS APIs on your behalf. Use the following AWS CLI command to create the IAM policy in your AWS account. You can view the policy document on GitHub.
+
+aws iam create-policy \
+    --policy-name ALBIngressControllerIAMPolicy \
+    --policy-document https://raw.githubusercontent.com/kubernetes-sigs/aws-alb-ingress-controller/v1.1.4/docs/examples/iam-policy.json
+    
+ 4. Create a Kubernetes service account named alb-ingress-controller in the kube-system namespace, a cluster role, and a cluster role binding for the ALB Ingress Controller to use with the following command. If you don't have kubectl installed, complete the instructions in Installing kubectl to install it.
+ 
+ kubectl create serviceaccount alb-ingress-controller -n kube-system
+ 
+ kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-alb-ingress-controller/v1.1.4/docs/examples/rbac-role.yaml
+  
+  
+5.  Create an IAM role for the ALB ingress controller and attach the role to the service account created in the previous step. If you didn't create your cluster with eksctl, then use the instructions on the AWS Management Console or AWS CLI tabs.
+
+# SEARCH ----> IAM ---> POLICY ---> ALBIngressControllerIAMPolicy ---> COPY THE ARN BELOW
+
+eksctl create iamserviceaccount \
+    --region us-east-1 \
+    --name alb-ingress-controller \
+    --namespace kube-system \
+    --cluster cloudgeeks.ca-eks \
+    --attach-policy-arn arn:aws:iam::394066857791:policy/ALBIngressControllerIAMPolicy \
+    --override-existing-serviceaccounts \
+    --approve
+    
+6.  Deploy the ALB Ingress Controller with the following command.
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-alb-ingress-controller/v1.1.4/docs/examples/alb-ingress-controller.yaml
+
+7. Open the ALB Ingress Controller deployment manifest for editing with the following command.
+
+kubectl edit deployment.apps/alb-ingress-controller -n kube-system
+
+8. Add a line for the cluster name after the --ingress-class=alb line. If you're running the ALB ingress controller on Fargate, then you must also add the lines for the VPC ID, and AWS Region name of your cluster. Once you've added the appropriate lines, save and close the file.
+
+    spec:
+      containers:
+      - args:
+        - --ingress-class=alb
+        - --cluster-name=cloudgeeks.ca-eks
+        - --aws-vpc-id=vpc-0419355bf920ef189
+        - --aws-region=us-east-1
+        
+        
+        
+  8a. # Note
+  
+# If your Ingress has not been created after several minutes, run the following command to view the Ingress controller logs. These logs may contain error messages that can help you diagnose any issues with your deployment.
+  
+    kubectl logs -n kube-system   deployment.apps/alb-ingress-controller
+    
+    
+9. Confirm that the ALB Ingress Controller is running with the following command.
+
+kubectl get pods -n kube-system
+
+
+
+# Issues
+# https://github.com/kubernetes-sigs/aws-alb-ingress-controller/issues/970
+
+# Deploy the RBAC roles manifest
+
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-alb-ingress-controller/v1.1.2/docs/examples/rbac-role.yaml
+
+
+
+########################################################################################################################################################
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ALB INGRESS SETUP $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#########################################################################################################################################################
+
+
+# Step-1
+vim nginx-backend.yaml
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.15.2
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 250m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256M
+
+
+# Step-2
+
+# https://kubernetes-sigs.github.io/aws-alb-ingress-controller/guide/ingress/annotation/
+
+vim alb-infress.yaml
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nginx.saqlainmushtaq.com
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+
+  labels:
+    app: nginx
+spec:
+  tls:
+  - hosts:
+    - nginx.saqlainmushtaq.com
+    secretName: saqlainmushtaq-com-tls
+  rules:
+    - host: nginx.saqlainmushtaq.com
+      http:
+        paths:
+        - path: /
+          backend:
+            serviceName: nginx
+            servicePort: 80
+
+
+
+kubectl apply -f .
+
+##################################################################################################################
+# https://eksworkshop.com/beginner/130_exposing-service/ingress_controller_alb/
+
+# https://kubernetes-sigs.github.io/aws-alb-ingress-controller/guide/ingress/annotation/
+
+# https://github.com/quickbooks2018/Terraform-V-12/tree/master/terraform.v12/eks
+
+# https://docs.aws.amazon.com/eks/latest/userguide/alb-ingress.html
+
+# https://kubernetes-sigs.github.io/aws-alb-ingress-controller/guide/ingress/annotation/
+
+# https://docs.aws.amazon.com/eks/latest/userguide/create-service-account-iam-policy-and-role.html#create-service-account-iam-role
+
+# Terraform EKS  ---> ALB Ingress 
+
+# To deploy the ALB Ingress Controller to an Amazon EKS cluster
+
+# https://docs.aws.amazon.com/eks/latest/userguide/alb-ingress.html
+
+Tag the subnets in your VPC that you want to use for your load balancers so that the ALB Ingress Controller knows that it can use them. For more information, see Subnet Tagging Requirement. If you deployed your cluster with ekctl, then the tags are already applied.
+
+All subnets in your VPC should be tagged accordingly so that Kubernetes can discover them.
+
+Key	Value
+kubernetes.io/cluster/<cluster-name>
+
+shared
+
+Public subnets in your VPC should be tagged accordingly so that Kubernetes knows to use only those subnets for external load balancers.
+
+Key	                        Value
+kubernetes.io/role/elb       1
+
+Private subnets in your VPC should be tagged accordingly so that Kubernetes knows that it can use them for internal load balancers:
+
+Key	                                      Value
+kubernetes.io/role/internal-elb            1
+
+2. Create an IAM OIDC provider and associate it with your cluster. If you don't have eksctl version 0.14.0 or later installed, complete the instructions in Installing or Upgrading eksctl to install or upgrade it. You can check your installed version with eksctl version.
+
+eksctl utils associate-iam-oidc-provider \
+    --region us-east-1 \
+    --cluster cloudgeeks.ca-eks \
+    --approve
+
+3. Create an IAM policy called ALBIngressControllerIAMPolicy for the ALB Ingress Controller pod that allows it to make calls to AWS APIs on your behalf. Use the following AWS CLI command to create the IAM policy in your AWS account. You can view the policy document on GitHub.
+
+aws iam create-policy \
+    --policy-name ALBIngressControllerIAMPolicy \
+    --policy-document https://raw.githubusercontent.com/kubernetes-sigs/aws-alb-ingress-controller/v1.1.4/docs/examples/iam-policy.json
+    
+ 4. Create a Kubernetes service account named alb-ingress-controller in the kube-system namespace, a cluster role, and a cluster role binding for the ALB Ingress Controller to use with the following command. If you don't have kubectl installed, complete the instructions in Installing kubectl to install it.
+ 
+ kubectl create serviceaccount alb-ingress-controller -n kube-system
+ 
+ kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-alb-ingress-controller/v1.1.4/docs/examples/rbac-role.yaml
+ 
+ 
+ 5. Create an IAM role for the ALB ingress controller and attach the role to the service account created in the previous step. If you didn't create your cluster with eksctl, then use the instructions on the AWS Management Console or AWS CLI tabs.
+ 
+ 
+a. Using the instructions in Create an IAM Role, create an IAM role named eks-alb-ingress-controller and attach the ALBIngressControllerIAMPolicy IAM policy that you created in a previous step to it. Note the Amazon Resource Name (ARN) of the role, once you've created it.
+
+A ---> Create an IAM Role
+Create an IAM role for your service accounts. Select the tab with the name of the tool that you want to use to create the role.
+
+1. Set your AWS account ID to an environment variable with the following command.
+
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+
+2. Set your OIDC identity provider to an environment variable with the following command, replacing your cluster name.
+
+# Important
+# You must use at least version 1.18.10 of the AWS CLI to receive the proper output from this command. For more information, see Installing the AWS CLI in the AWS Command Line Interface User Guide.
+
+OIDC_PROVIDER=$(aws eks describe-cluster --name cloudgeeks.ca-eks --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
+
+3. Set the service account namespace to an environment variable with the following command, replacing your namespace name.
+
+SERVICE_ACCOUNT_NAMESPACE=kube-system
+
+4. Set the service account name to an environment variable with the following command, replacing service-account-name with your service account name.
+
+kubectl create serviceaccount alb-ingress-controller -n kube-system
+
+SERVICE_ACCOUNT_NAME=alb-ingress-controller
+
+5. Copy the block of text below into a file named trust.json.
+
+read -r -d '' TRUST_RELATIONSHIP <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${OIDC_PROVIDER}"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "${OIDC_PROVIDER}:sub": "system:serviceaccount:${SERVICE_ACCOUNT_NAMESPACE}:${SERVICE_ACCOUNT_NAME}"
+        }
+      }
+    }
+  ]
+}
+EOF
+echo "${TRUST_RELATIONSHIP}" > trust.json
+
+
+6. Run the following AWS CLI command to create the role, replacing your IAM role name and description.
+
+aws iam create-role --role-name alb-ingress-controller --assume-role-policy-document file://trust.json --description "alb-ingress-controller IAM_ROLE_DESCRIPTION"
+
+7. Run the following command to attach your IAM policy to your role, replacing your IAM role name and policy ARN.
+
+# aws iam attach-role-policy --role-name IAM_ROLE_NAME --policy-arn=IAM_POLICY_ARN
+
+aws iam attach-role-policy --role-name alb-ingress-controller --policy-arn=IAM_POLICY_ARN
+
+8. Associate the IAM role with a Kubernetes service account. For more information, see Specifying an IAM Role for your Service Account.
+
+# https://docs.aws.amazon.com/eks/latest/userguide/specify-service-account-role.html
+
+# Specifying an IAM Role for your Service Account
+
+In Kubernetes, you define the IAM role to associate with a service account in your cluster by adding the following annotation to the service account.
+
+# Note
+If you created an IAM role to use with your service account using eksctl, this has already been done for you with the service account that you specified when creating the role.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::AWS_ACCOUNT_ID:role/IAM_ROLE_NAME
+    
+    
+ To patch a service account to use with IAM roles
+
+1. Use the following command to annotate your service account with the ARN of the IAM role that you want to use with your service account. Be sure to substitute your own values for the alternate-colored example values to use with your pods.   
+
+kubectl annotate serviceaccount -n SERVICE_ACCOUNT_NAMESPACE SERVICE_ACCOUNT_NAME \
+eks.amazonaws.com/role-arn=arn:aws:iam::AWS_ACCOUNT_ID:role/IAM_ROLE_NAME
+
+2. Delete and re-create any existing pods that are associated with the service account to apply the credential environment variables. The mutating web hook does not apply them to pods that are already running. The following command deletes the existing the aws-node DaemonSet pods and deploys them with the service account annotation. You can modify the namespace, deployment type, and label to update your specific pods.
+
+kubectl delete pods -n kube-system -l k8s-app=aws-node
+
+3. Confirm that the pods all restarted.
+
+kubectl get pods -n kube-system  -l k8s-app=aws-node
+
+4. Describe one of the pods and verify that the AWS_WEB_IDENTITY_TOKEN_FILE and AWS_ROLE_ARN environment variables exist.
+
+kubectl exec -n kube-system aws-node-9rgzw env | grep AWS
+
+Output:
+
+AWS_VPC_K8S_CNI_LOGLEVEL=DEBUG
+AWS_ROLE_ARN=arn:aws:iam::AWS_ACCOUNT_ID:role/IAM_ROLE_NAME
+AWS_WEB_IDENTITY_TOKEN_FILE=/var/run/secrets/eks.amazonaws.com/serviceaccount/token
+The IAM role was created by eksctl when you created the Kubernetes service account in a previous step.
+    
+
+
+
+

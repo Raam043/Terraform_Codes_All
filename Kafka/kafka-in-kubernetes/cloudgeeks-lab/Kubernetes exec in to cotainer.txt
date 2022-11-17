@@ -1,0 +1,109 @@
+# List
+# https://kubernetes.io/docs/tasks/access-application-cluster/list-all-running-container-images/
+# https://stackoverflow.com/questions/33924198/how-do-you-cleanly-list-all-the-containers-in-a-kubernetes-pod
+#
+
+Container in a pod
+kubectl get pods POD_NAME_HERE -o jsonpath='{.spec.containers[*].name}'
+
+kubectl get pods cloudgeeks-ca-bridge-bridge-5694dc7dc5-8rpd2 -o jsonpath='{.spec.containers[*].name}' -n kafka
+
+# Shell
+# https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-container/
+In a container which is in a POD
+
+kubectl exec -it -n kafka cloudgeeks-ca-bridge-bridge-5694dc7dc5-8rpd2 --container cloudgeeks-ca-bridge-bridge -- /bin/bash
+
+###############################
+# Direct entry in bridge
+################################
+# Producing messages
+
+curl -v GET http://localhost:8080/healthy
+
+curl -X POST \
+  http://localhost:8080/topics/my-topic \
+  -H 'content-type: application/vnd.kafka.json.v2+json' \
+  -d '{
+    "records": [
+        {
+            "key": "key-1",
+            "value": "value-1"
+        },
+        {
+            "key": "key-2",
+            "value": "value-2"
+        }
+    ]
+}'
+
+# Cosuming messages
+
+curl -X POST http://localhost:8080/consumers/my-group \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "name": "my-consumer",
+    "format": "json",
+    "auto.offset.reset": "earliest",
+    "enable.auto.commit": false
+  }'
+
+
+
+# Subscribing to the topic
+
+curl -X POST http://localhost:8080/consumers/my-group/instances/my-consumer/subscription \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "topics": [
+        "my-topic"
+    ]
+}'
+
+
+
+
+# Consuming messages
+
+curl -X GET http://localhost:8080/consumers/my-group/instances/my-consumer/records \
+  -H 'accept: application/vnd.kafka.json.v2+json'
+
+
+
+# Committing offsets
+
+curl -X POST http://localhost:8080/consumers/my-group/instances/my-consumer/offsets \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "offsets": [
+        {
+            "topic": "my-topic",
+            "partition": 0,
+            "offset": 2
+        }
+    ]
+}'
+
+
+# Deleting a consumer
+
+curl -X DELETE http://localhost:8080/consumers/my-group/instances/my-consumer
+
+
+# Check Topic creation directly in Kafka 
+kubectl exec -it cloudgeeks-ca-kafka-kafka-0 -c kafka -n kafka -- bin/kafka-topics.sh --bootstrap-server cloudgeeks-ca-kafka-kafka-bootstrap:9092 --describe
+kubectl exec -it cloudgeeks-ca-kafka-kafka-1 -c kafka -n kafka -- bin/kafka-topics.sh --bootstrap-server cloudgeeks-ca-kafka-kafka-bootstrap:9092 --describe
+kubectl exec -it cloudgeeks-ca-kafka-kafka-2 -c kafka -n kafka -- bin/kafka-topics.sh --bootstrap-server cloudgeeks-ca-kafka-kafka-bootstrap:9092 --describe
+
+# How to view kafka message
+https://stackoverflow.com/questions/44239027/how-to-view-kafka-message
+
+kubectl exec -it cloudgeeks-ca-kafka-kafka-0 -c kafka -n kafka -- bin/kafka-console-consumer.sh --bootstrap-server cloudgeeks-ca-kafka-kafka-bootstrap:9092 --topic  my-topic --from-beginning
+
+
+
+
+
+# END
+
+

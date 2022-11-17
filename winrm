@@ -1,0 +1,5 @@
+apt search winrm
+
+apt install -y golang-github-packer-community-winrmcp-dev
+
+copy files to remote hosts using WinRM (Go library)

@@ -1,0 +1,18 @@
+# https://tmuxcheatsheet.com/
+
+# https://gist.github.com/MohamedAlaa/2961058
+
+# apt install -y tmux
+
+# Start a new session
+
+1. tmux new -s asim
+
+# Attach to new session
+
+2. tmux attach-session -t asim
+
+# Dettach from a session
+
+3. tmux detach  ---> CTRL+b ---> lift your all fingers & now press ---> d
+

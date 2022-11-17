@@ -1,0 +1,19 @@
+# Every Minute
+* * * * * yes | docker system prune -a
+
+# Every Week Day Run a Cronjob
+# https://crontab.guru/every-sunday
+
+0 0 * * SUN yes | docker system prune -a
+
+crontab -l
+
+crontab -e 
+
+
+journalctl _COMM=cron
+
+
+# https://stackoverflow.com/questions/10472173/cannot-get-cron-to-work-on-amazon-ec2
+
+# https://unix.stackexchange.com/questions/212355/where-is-my-logfile-of-crontab

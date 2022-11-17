@@ -1,0 +1,1 @@
+# kubectl -n my-namespace rollout restart deployment my-deployment-1 my-deployment-2 my-deployment-3

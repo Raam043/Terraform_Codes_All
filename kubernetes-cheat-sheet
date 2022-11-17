@@ -1,0 +1,3 @@
+# https://kubernetes.io/docs/reference/kubectl/cheatsheet/
+
+kubectl rollout restart deployment <deployment_name> -n <namespace>

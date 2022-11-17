@@ -1,0 +1,136 @@
+#https://medium.com/@stijnbe/using-gitlab-ci-with-aws-container-registry-ecaf4a37d791
+
+
+Using Gitlab CI with AWS Container Registry
+Stijn Beauprez
+Stijn Beauprez
+Follow
+Oct 21, 2017 · 3 min read
+At Outsite we are using AWS Container Services together with AWS Container Registry to deploy our services. We also use Gitlab for our repositories and CI. One of the features they offer is Gitlab CI/CD.
+
+We chose to go with EC2 Container Registry instead of Docker Hub or Gitlab Registry because we don’t want to deal with authentication in EC2 Container Services and it’s included in AWS.
+Create new Container Registry repository
+If this is your first Container Registry repository then you will see below screen. After clicking “Get Started” you will be asked to give your repository a name.
+
+
+2. After clicking Next Step, the repository will be created and you will see instructions on how to use the repository.
+Create new AWS IAM user for Gitlab
+Add a new user for gitlab. This user should only have programmatic access as it will only use the awscli tool.
+
+2. Create a new group called “CI” and add the following 2 policies:
+- AmazonEC2ContainerRegistryFullAccess
+- AmazonEC2ContainerServiceFullAccess
+3. Note down the Access Key and the Secret Key that will be generated after creating the gitlab-ci user. We will need these keys for the environment variables in Gitlab.
+Setup environment variables
+If you want to use ECS and ECR for all projects in your group or Gitlab account, you can configure the variables at the top level. You can also opt to configure these variables on the project level itself.
+In your project/group go to Settings > CI/CD
+Add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to the variables. Using this naming the awscli tool will pick them up automatically.
+
+Configure .gitlab-ci.yml
+Create a new file in the root of your repository called .gitlab-ci.yml
+image: docker:latest
+
+variables:
+  REPOSITORY_URL: 363480529736.dkr.ecr.us-east-1.amazonaws.com/outsite/outsite-slackbot
+
+services:
+- docker:dind
+
+before_script:
+  - apk add --no-cache curl jq python py-pip
+  - pip install awscli
+
+stages:
+  - build
+
+build:
+  stage: build
+  script:
+    - $(aws ecr get-login --no-include-email --region us-east-1)
+    - docker build -t $REPOSITORY_URL .
+    - docker push $REPOSITORY_URL
+  only:
+    - master
+  tags:
+    - docker
+.gitlab-ci.yml example for docker build with ecr ($1680563) · Snippets
+GitLab.com
+gitlab.com
+2. Commit and push this file to the repository and the Gitlab CI pipeline will start building and pushing your docker container.
+Summary
+Gitlab CI/CD is a really great way to build your docker images and push them to EC2 Container Registry. As it does not require setting up any additional virtual machines or services it’s definitely the way to go.
+
+
+
+############################################################################################
+#https://stackoverflow.com/questions/48692554/how-to-use-eb-init-without-manual-instructions
+
+#https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb3-init.html
+
+#https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb3-create.html#eb3-createoutput
+
+
+I want to make an eb deploy in a clean environment. It tells me I first need to execute eb init.
+
+Looks like you've solved this problem, but I'll clarify anyway: The EBCLI requires that the present working directory be rooted at an eb init-ed application. The EBCLI looks for a .elasticbeanstalk/config.yml directory to determine whether the PWD has been eb init-ed. Almost all eb operations require the PWD to have been init-ed with a Beanstalk application.
+
+        EDIT I tried: eb init --region eu-west-1 appname ...
+
+You're almost there. In order to suppress the interactive mode, which is what you are trying to do, you need to pass the --platform flag. I can clearly see how inconvenient this is, but what you need is:
+
+eb init --region eu-west-1 --platform <platform-name> appname
+
+#############################################################################################
+#https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environments-cfg-clb.html
+
+eb create test-env --elb-type classic
+
+
+###############################################################################################
+#https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/command-options-general.html#command-options-general-elbhealthcheck
+
+Application Healthcheck URL
+
+The path to which to send health check requests. If not set, the load balancer attempts to make a TCP connection on port 80 to verify health. Set to a path starting with / to send an HTTP GET request to that path. You can also include a protocol (HTTP, HTTPS, TCP, or SSL) and port prior to the path to check HTTPS connectivity or use a non-default port.
+
+Note
+
+If you use the Elastic Beanstalk console to create an environment, you can't set this option in a configuration file. The console overrides this option with a recommended value.
+
+None
+
+/ (HTTP GET to root path)
+
+/health
+
+HTTPS:443/
+
+HTTPS:443/health
+
+
+###############################################################################################################################################################################
+https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environments-cfg-alb.html
+
+
+
+Example
+.ebextensions/alb-default-process.config
+
+The following configuration file modifies health check and stickiness settings on the default process.
+
+option_settings:
+  aws:elasticbeanstalk:environment:process:default:
+    DeregistrationDelay: '20'
+    HealthCheckInterval: '15'
+    HealthCheckPath: /
+    HealthCheckTimeout: '5'
+    HealthyThresholdCount: '3'
+    UnhealthyThresholdCount: '5'
+    Port: '80'
+    Protocol: HTTP
+    StickinessEnabled: 'true'
+    StickinessLBCookieDuration: '43200'
+
+
+
+

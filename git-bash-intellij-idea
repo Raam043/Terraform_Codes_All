@@ -1,0 +1,10 @@
+# https://stackoverflow.com/questions/21676150/setup-git-in-intellij-terminal/29347211
+
+Setup JetBrains(InteliJ, WebStorm, PHPStorm) IDE terminal to use GIT bash
+
+File
+Settings
+(Enter 'Terminal' in search)
+Change Shell path to:
+
+"C:\Program Files\Git\bin\sh.exe" --login -i

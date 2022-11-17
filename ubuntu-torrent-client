@@ -1,0 +1,3 @@
+# https://linuxhint.com/best-torrent-clients-for-linux/
+
+apt install transmission-gtk

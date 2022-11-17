@@ -1,0 +1,113 @@
+STEP -1
+
+Set rbac
+
+https://github.com/kubernetes-incubator/external-storage/blob/master/aws/efs/deploy/rbac.yaml
+
+https://github.com/kubernetes-incubator/external-storage/issues/754
+
+The quick fix is to give the cluster-admin role to the default service account. Of course, depending on your environment and security, you may need a more elaborate fix. If you elect to go the easy way, you can simply apply this:
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: default-admin-rbac (or whatever)
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+After I did this, the output from the provisioner immediately became successful and started creating volumes.
+
+
+STEP-2
+https://containerjournal.com/2019/04/08/using-ebs-and-efs-as-persistent-volume-in-kubernetes/
+
+https://github.com/kubernetes-incubator/external-storage/tree/master/aws/efs
+
+
+nano manifest.yaml
+
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: efs-provisioner
+data:
+  file.system.id: fs-eb13a440
+  aws.region: us-west-2
+  provisioner.name: cloudgeeks.ca.com/aws-efs
+  dns.name: ""
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: efs-provisioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: efs-provisioner
+    spec:
+      containers:
+        - name: efs-provisioner
+          image: quay.io/external_storage/efs-provisioner:latest
+          env:
+            - name: FILE_SYSTEM_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: efs-provisioner
+                  key: file.system.id
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: efs-provisioner
+                  key: aws.region
+            - name: DNS_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: efs-provisioner
+                  key: dns.name
+                  optional: true
+            - name: PROVISIONER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: efs-provisioner
+                  key: provisioner.name
+          volumeMounts:
+            - name: pv-volume
+              mountPath: /persistentvolumes
+      volumes:
+        - name: pv-volume
+          nfs:
+            server: fs-eb13a440.efs.us-west-2.amazonaws.com
+            path: /
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: aws-efs
+provisioner: cloudgeeks.ca.com/aws-efs
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: efs
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "aws-efs"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+---
+
+

@@ -1,0 +1,12 @@
+# If you want to revert changes from staging area to working area.
+
+git reset HEAD filename.txt
+
+git log ---> see where is HEAD ---> the latest commit
+
+# If you want to revert the changes from COMMIT to working area, if you do git log, you will see the COMMIT is removed.
+
+git reset HEAD~
+
+
+

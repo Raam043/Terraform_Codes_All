@@ -1,0 +1,257 @@
+#CUSTOM PASSWORD
+----------------
+https://scottlinux.com/2012/09/01/encode-or-decode-base64-from-the-command-line/
+
+To encode text to base64, use the following syntax:
+
+$ echo -n 'scottlinux.com rocks' | base64
+c2NvdHRsaW51eC5jb20gcm9ja3MK
+To decode, use base64 -d. To decode base64, use a syntax like the following:
+
+$ echo -n c2NvdHRsaW51eC5jb20gcm9ja3MK | base64 -d
+scottlinux.com rocks
+
+
+
+############################################################################################
+echo -n 'cloudgeeks.ca.com asim' | base64
+
+Y2xvdWRlbGxpZ2VudC5jb20gYXNpbQ==
+
+
+
+echo Y2xvdWRlbGxpZ2VudC5jb20gYXNpbQ== | base64 -d
+
+cloudgeeks.ca.com asim
+#############################################################################################
+
+#RANDOM PASSWORD
+----------------
+https://github.com/groovemonkey/project-based-kubernetes/blob/master/projects/wordpress/secrets/wp-mysql-secrets.yaml
+
+echo && PASS=$(cat /dev/urandom | env LC_CTYPE=C tr -dc [:alnum:] | head -c 15) && echo "Password: ${PASS}" && echo "Base64 encoded:" $(echo ${PASS} | base64)
+
+
+
+##### We are going to create a postgres-secret.yaml #####
+
+kubectl apply -f postgres-secret.yaml
+
+nano postgres-secret.yaml
+
+apiVersion: v1
+
+# This is a workaround for the broken  --from-file kubernetes abstraction
+# which doesn't sanely handle .env files
+# MYSQL_DATABASE and MYSQL_USER are both set to 'wordpress'
+
+# INSTRUCTIONS:
+# Generate a MYSQL_PASSWORD and MYSQL_ROOT_PASSWORD and then save this file before using it.
+# e.g.
+# echo && PASS=$(cat /dev/urandom | env LC_CTYPE=C tr -dc [:alnum:] | head -c 15) && echo "Password: ${PASS}" && echo "Base64 encoded:" $(echo ${PASS} | base64)
+
+kind: Secret
+metadata:
+  name: jira-postgres-db-secrets
+  namespace: default
+
+type: Opaque
+
+data:
+  # Example if you need multiple values
+  # MYSQL_DATABASE: d29yZHByZXNzCg==
+  # MYSQL_USER: d29yZHByZXNzCg==
+  # MYSQL_PASSWORD: SXhCMzRxRXF0dERubXpR
+
+  #https://hub.docker.com/_/postgres
+
+  # This is base64 encoded -- the real password is NGiJi6A46YJTjTx
+  POSTGRES_PASSWORD: TkdpSmk2QTQ2WUpUalR4
+
+
+--------------------------------------------------------------------
+
+kubectl get secrets
+
+
+#https://github.com/groovemonkey/project-based-kubernetes/tree/master/projects/wordpress/manifests
+
+1. (A) kubectl apply -f storage.yaml
+
+nano storage.yaml
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: postgres-db-block-storage
+provisioner: kubernetes.io/aws-ebs
+allowVolumeExpansion: true
+parameters:
+  type: gp2
+  zones: us-west-2b
+
+
+
+
+
+
+
+(B) kubectl apply -f postgres-volume-claim.yaml
+
+
+nano postgres-volume-claim.yaml
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-volume
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: postgres-db-block-storage
+
+
+2. kubectl apply -f postgres-replica-set.yaml
+
+#https://www.bmc.com/blogs/kubernetes-postgresql/
+
+nano postgres-replica-set.yaml
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: postgres
+  # labels so that we can bind a Service to this Pod
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: database
+        image: postgres
+        
+     #   args:
+          # We need this to prevent mysql from throwing up -- our DO volume will be mounted here
+      #    - "--ignore-db-dir=lost+found"
+        # A nice way to get a whole bunch of values from a k8s secret into a container's  environment variables
+        envFrom:
+          - secretRef:
+              name: jira-postgres-db-secrets
+        ## The old way (one for each value):
+        # env:
+        # # Use a secret, avoid having plaintext passwords all over your configs
+        # - name: POSTGRES_PASSWORD
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: wp-db-secrets
+        #       key: POSTGRES_PASSWORD
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+        ports:
+          - containerPort: 5432
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+          subPath: postgres
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-volume
+
+
+3. kubectl apply -f postgres-service.yaml
+
+nano postgres-service.yaml
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  ports:
+  - port: 5432
+    protocol: TCP
+  selector:
+    app: postgres
+
+
+4. kubectl get replicasets
+   kubectl get secrets
+   kubectl get pods
+   kubectl get services
+   kubectl get ep ---> end point
+
+5. pgAdmin Deployment ---> Note: postgres uses pgadmin not phpmyadmin
+
+# useful link ---> https://blog.toadworld.com/2017/03/29/postgresql-database-with-kubernetes-for-performance-and-collaboration
+
+# postgres Command line create data-base and user
+#https://www.cyberciti.biz/faq/howto-add-postgresql-user-account/
+
+kubectl get pods -o wide
+
+kubectl exec -it postgres-788ffb6846-rsbcf -- bash
+
+Step # 1: Add a Linux/UNIX user called tom
+Type the following commands to create a UNIX/Linux user called tom:
+# adduser asim	
+# passwd asim
+
+Step # 2: Becoming a superuser
+su - postgres
+
+Step #3: Now connect to database server
+Type the following command
+$ psql template1
+
+OR
+$ psql -d template1 -U postgres
+
+Step #4: Add a user called asim
+
+CREATE USER asim WITH PASSWORD 'asim';
+
+Step #5: Add a database called jerry
+
+CREATE DATABASE jiradb;
+
+Now grant all privileges on database
+template1=# GRANT ALL PRIVILEGES ON DATABASE jiradb to asim;
+
+Type \q to quit:
+template1=# \q
+
+Step #6: Test asim user login
+
+In order to login as asim you need to type following commands. Login as asim or use su command:
+$ su asim
+$ psql -d jiradb -U asim
+
+
+Output:
+
+Welcome to psql 7.4.16, the PostgreSQL interactive terminal.
+
+Type:  \\copyright for distribution terms
+       \\h for help with SQL commands
+       \\? for help on internal slash commands
+       \\g or terminate with semicolon to execute query
+       \\q to quit
+
+jiradb=> 
+

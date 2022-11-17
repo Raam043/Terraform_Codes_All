@@ -1,0 +1,24 @@
+# https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_aws_deny-requested-region.html
+# DenyAllOutsideUsEast1ExceptAllowingS3
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "DenyAllOutsideUsEast1ExceptAllowingS3",
+            "Effect": "Deny",
+            "NotAction": [
+                "s3:*"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringNotEquals": {
+                    "aws:RequestedRegion": [
+                        "us-east-1"
+                    ]
+                }
+            }
+        }
+    ]
+}

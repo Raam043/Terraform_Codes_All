@@ -1,0 +1,5 @@
+# https://github.com/aws-samples/aws-account-vending-machine
+
+# https://www.youtube.com/watch?v=PPybKJubMeY&ab_channel=AmazonWebServices
+
+# https://aws.amazon.com/products/management-and-governance/

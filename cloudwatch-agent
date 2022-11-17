@@ -1,0 +1,629 @@
+# https://aws.amazon.com/blogs/mt/amazon-ec2-systems-manager-documents-support-for-cross-platform-documents-and-multiple-steps-of-the-same-type/
+
+# https://www.youtube.com/watch?v=z_bUDHUEWUY
+
+# ./amazon-cloudwatch-agent-ctl --help
+
+# https://www.youtube.com/watch?v=vAnIhIwE5hY
+
+# https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html
+
+
+amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:AmazonCloudWatch-linux -s 
+
+
+# https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html
+
+
+# https://www.youtube.com/watch?v=3k2qqBh0Sns
+
+# https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/installing-cloudwatch-agent-ssm.html
+
+
+##############
+# Memory Linux
+##############
+
+{
+      "agent": {
+        "metrics_collection_interval": 60,
+        "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+      },
+"metrics": {
+    "metrics_collected": {
+      "mem": {
+        "measurement": [
+          {"name": "used", "rename": "MemoryUsed"},
+          {"name": "mem_available", "rename": "MemoryAvailable"}
+        ]
+        }
+      },
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    }
+  }
+}
+
+
+#################
+# Memory Windows
+#################
+
+{
+  "metrics": {
+    "namespace": "Windows System",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "aggregation_dimensions" : [ ["InstanceId"] ],
+    "metrics_collected": {
+      "Memory": {
+        "measurement": [
+          {"name": "% Committed Bytes In Use", "rename": "MemoryUsed", "unit": "Bytes"},
+          {"name" : "Available Bytes", "rename": "MemoryAvailable", "unit": "Bytes"}
+        ],
+        "metrics_collection_interval": 60
+      },
+      "Paging File": {
+        "measurement": [
+          {"name": "% Usage", "rename": "paging_used"}
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ]
+      }
+    }
+  }
+}
+
+
+
+###############
+# AWS Official
+###############
+
+
+
+    {
+      "agent": {
+        "metrics_collection_interval": 10,
+        "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+      },
+      "metrics": {
+        "namespace": "MyCustomNamespace",
+        "metrics_collected": {
+          "cpu": {
+            "resources": [
+              "*"
+            ],
+            "measurement": [
+              {"name": "cpu_usage_idle", "rename": "CPU_USAGE_IDLE", "unit": "Percent"},
+              {"name": "cpu_usage_nice", "unit": "Percent"},
+              "cpu_usage_guest"
+            ],
+            "totalcpu": false,
+            "metrics_collection_interval": 10,
+            "append_dimensions": {
+              "customized_dimension_key_1": "customized_dimension_value_1",
+              "customized_dimension_key_2": "customized_dimension_value_2"
+            }
+          },
+          "disk": {
+            "resources": [
+              "/",
+              "/tmp"
+            ],
+            "measurement": [
+              {"name": "free", "rename": "DISK_FREE", "unit": "Gigabytes"},
+              "total",
+              "used"
+            ],
+             "ignore_file_system_types": [
+              "sysfs", "devtmpfs"
+            ],
+            "metrics_collection_interval": 60,
+            "append_dimensions": {
+              "customized_dimension_key_3": "customized_dimension_value_3",
+              "customized_dimension_key_4": "customized_dimension_value_4"
+            }
+          },
+          "diskio": {
+            "resources": [
+              "*"
+            ],
+            "measurement": [
+              "reads",
+              "writes",
+              "read_time",
+              "write_time",
+              "io_time"
+            ],
+            "metrics_collection_interval": 60
+          },
+          "swap": {
+            "measurement": [
+              "swap_used",
+              "swap_free",
+              "swap_used_percent"
+            ]
+          },
+          "mem": {
+            "measurement": [
+              "mem_used",
+              "mem_cached",
+              "mem_total"
+            ],
+            "metrics_collection_interval": 1
+          },
+          "net": {
+            "resources": [
+              "eth0"
+            ],
+            "measurement": [
+              "bytes_sent",
+              "bytes_recv",
+              "drop_in",
+              "drop_out"
+            ]
+          },
+          "netstat": {
+            "measurement": [
+              "tcp_established",
+              "tcp_syn_sent",
+              "tcp_close"
+            ],
+            "metrics_collection_interval": 60
+          },
+          "processes": {
+            "measurement": [
+              "running",
+              "sleeping",
+              "dead"
+            ]
+          }
+        },
+        "append_dimensions": {
+          "ImageId": "${aws:ImageId}",
+          "InstanceId": "${aws:InstanceId}",
+          "InstanceType": "${aws:InstanceType}",
+          "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
+        },
+        "aggregation_dimensions" : [["ImageId"], ["InstanceId", "InstanceType"], ["d1"],[]],
+        "force_flush_interval" : 30
+      },
+      "logs": {
+        "logs_collected": {
+          "files": {
+            "collect_list": [
+              {
+                "file_path": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+                "log_group_name": "amazon-cloudwatch-agent.log",
+                "log_stream_name": "amazon-cloudwatch-agent.log",
+                "timezone": "UTC"
+              },
+              {
+                "file_path": "/opt/aws/amazon-cloudwatch-agent/logs/test.log",
+                "log_group_name": "test.log",
+                "log_stream_name": "test.log",
+                "timezone": "Local"
+              }
+            ]
+          }
+        },
+        "log_stream_name": "my_log_stream_name",
+        "force_flush_interval" : 15
+      }
+    }
+    
+    
+    ######################
+    # AWS OFFICIAL Custom  ############################### -------------------------> USE THIS
+    ######################
+    
+    
+        {
+      "agent": {
+        "metrics_collection_interval": 10,
+        "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+      },
+      "metrics": {
+        "namespace": "CWAgent",
+        "metrics_collected": {
+          "cpu": {
+            "resources": [
+              "*"
+            ],
+            "measurement": [
+              {"name": "cpu_usage_idle", "rename": "CPU_USAGE_IDLE", "unit": "Percent"},
+              {"name": "cpu_usage_nice", "unit": "Percent"},
+              "cpu_usage_guest"
+            ],
+            "totalcpu": false,
+            "metrics_collection_interval": 10
+          },
+          "disk": {
+            "resources": [
+              "/",
+              "/tmp"
+            ],
+            "measurement": [
+              {"name": "free", "rename": "DISK_FREE", "unit": "Gigabytes"},
+              "total",
+              "used"
+            ],
+             "ignore_file_system_types": [
+              "sysfs", "devtmpfs"
+            ],
+            "metrics_collection_interval": 60
+          },
+          "diskio": {
+            "resources": [
+              "*"
+            ],
+            "measurement": [
+              "reads",
+              "writes",
+              "read_time",
+              "write_time",
+              "io_time"
+            ],
+            "metrics_collection_interval": 60
+          },
+          "swap": {
+            "measurement": [
+              "swap_used",
+              "swap_free",
+              "swap_used_percent"
+            ]
+          },
+          "mem": {
+            "measurement": [
+              "mem_used",
+              "mem_cached",
+              "mem_total"
+            ],
+            "metrics_collection_interval": 1
+          },
+          "net": {
+            "resources": [
+              "eth0"
+            ],
+            "measurement": [
+              "bytes_sent",
+              "bytes_recv",
+              "drop_in",
+              "drop_out"
+            ]
+          },
+          "netstat": {
+            "measurement": [
+              "tcp_established",
+              "tcp_syn_sent",
+              "tcp_close"
+            ],
+            "metrics_collection_interval": 60
+          },
+          "processes": {
+            "measurement": [
+              "running",
+              "sleeping",
+              "dead"
+            ]
+          }
+        },
+        "append_dimensions": {
+          "ImageId": "${aws:ImageId}",
+          "InstanceId": "${aws:InstanceId}",
+          "InstanceType": "${aws:InstanceType}",
+          "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
+        },
+        "aggregation_dimensions" : [["ImageId"], ["InstanceId", "InstanceType"], ["d1"],[]],
+        "force_flush_interval" : 30
+      },
+      "logs": {
+        "logs_collected": {
+          "files": {
+            "collect_list": [
+              {
+                "file_path": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+                "log_group_name": "amazon-cloudwatch-agent.log",
+                "log_stream_name": "amazon-cloudwatch-agent.log",
+                "timezone": "UTC"
+              }
+            ]
+          }
+        },
+        "log_stream_name": "cw_agent_log_stream",
+        "force_flush_interval" : 15
+      }
+    }
+
+
+#########################
+# AWS Custom Cloudwatch
+#########################
+
+
+● amazon-cloudwatch-agent.service - Amazon CloudWatch Agent
+     Loaded: loaded (/etc/systemd/system/amazon-cloudwatch-agent.service; enabled; vendor preset: enabled)
+     Active: active (running) since Thu 2021UTC; 1 day 12h ago
+   Main PID: 2613 (amazon-cloudwat)
+      Tasks: 10 (limit: 9185)
+     Memory: 28.6M
+     CGroup: /system.slice/amazon-cloudwatch-agent.service
+             └─2613 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent -config /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml -e>
+
+systemd[1]: Started Amazon CloudWatch Agent.
+start-amazon-cloudwatch-agent[2613]: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json does not exist or cannot>
+start-amazon-cloudwatch-agent[2613]: Valid Json input schema.
+start-amazon-cloudwatch-agent[2613]: I! Detecting run_as_user...
+
+#######
+# Steps
+#######
+
+vim /etc/systemd/system/amazon-cloudwatch-agent.service
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent -config /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml
+
+##############################
+# Note: Update the instace-id
+##############################
+
+vim /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml
+
+[agent]
+  collection_jitter = "0s"
+  debug = false
+  flush_interval = "1s"
+  flush_jitter = "0s"
+  hostname = ""
+  interval = "60s"
+  logfile = "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  logtarget = "lumberjack"
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  omit_hostname = false
+  precision = ""
+  quiet = false
+  round_interval = false
+
+[inputs]
+
+  [[inputs.disk]]
+    fieldpass = ["used_percent"]
+    tagexclude = ["mode"]
+    [inputs.disk.tags]
+      metricPath = "metrics"
+
+  [[inputs.logfile]]
+    destination = "cloudwatchlogs"
+    file_state_folder = "/opt/aws/amazon-cloudwatch-agent/logs/state"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-hup.log"
+      from_beginning = true
+      log_group_name = "Cloudgeeks-Production-CloudWatchLogs"
+      log_stream_name = "i-035e8b835851a7ea9/cfn-hup.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-init.log"
+      from_beginning = true
+      log_group_name = "Cloudgeeks-Production-CloudWatchLogs"
+      log_stream_name = "i-035e8b835851a7ea9/cfn-init.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-init-cmd.log"
+      from_beginning = true
+      log_group_name = "Cloudgeeks-Production-CloudWatchLogs"
+      log_stream_name = "i-035e8b835851a7ea9/cfn-init-cmd.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cloud-init.log"
+      from_beginning = true
+      log_group_name = "Cloudgeeks-Production-CloudWatchLogs"
+      log_stream_name = "i-035e8b835851a7ea9/cloud-init.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cloud-init-output.log"
+      from_beginning = true
+      log_group_name = "Cloudgeeks-Production-CloudWatchLogs"
+      log_stream_name = "i-035e8b835851a7ea9/cloud-init-output.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-wire.log"
+      from_beginning = true
+      log_group_name = "Cloudgeeks-Production-CloudWatchLogs"
+      log_stream_name = "i-035e8b835851a7ea9/cfn-wire.log"
+      pipe = false
+      timezone = "UTC"
+    [inputs.logfile.tags]
+      metricPath = "logs"
+
+  [[inputs.mem]]
+    fieldpass = ["used_percent"]
+    [inputs.mem.tags]
+      metricPath = "metrics"
+
+[outputs]
+
+  [[outputs.cloudwatch]]
+    force_flush_interval = "60s"
+    namespace = "CWAgent"
+    region = "us-east-1"
+    tagexclude = ["host", "metricPath"]
+    [outputs.cloudwatch.tagpass]
+      metricPath = ["metrics"]
+
+  [[outputs.cloudwatchlogs]]
+    force_flush_interval = "5s"
+    log_stream_name = "i-035e8b835851a7ea9"
+    region = "us-east-1"
+    tagexclude = ["metricPath"]
+    [outputs.cloudwatchlogs.tagpass]
+      metricPath = ["logs"]
+
+[processors]
+
+  [[processors.ec2tagger]]
+    ec2_metadata_tags = ["InstanceId"]
+    refresh_interval_seconds = "0s"
+    [processors.ec2tagger.tagpass]
+      metricPath = ["metrics"]
+      
+      
+      
+      
+      
+# systemctl daemon-reload
+
+# systemctl restart amazon-cloudwatch-agent
+
+# systemctl enable amazon-cloudwatch-agent
+
+
+
+
+# Automation
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/identify_ec2_instances.html
+
+yum install -y amazon-cloudwatch-agent
+
+INSTANCE_ID=$(cat /sys/devices/virtual/dmi/id/board_asset_tag)
+
+cat << EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml
+[agent]
+  collection_jitter = "0s"
+  debug = false
+  flush_interval = "1s"
+  flush_jitter = "0s"
+  hostname = ""
+  interval = "60s"
+  logfile = "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  logtarget = "lumberjack"
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  omit_hostname = false
+  precision = ""
+  quiet = false
+  round_interval = false
+
+[inputs]
+
+  [[inputs.disk]]
+    fieldpass = ["used_percent"]
+    tagexclude = ["mode"]
+    [inputs.disk.tags]
+      metricPath = "metrics"
+
+  [[inputs.logfile]]
+    destination = "cloudwatchlogs"
+    file_state_folder = "/opt/aws/amazon-cloudwatch-agent/logs/state"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-hup.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-hup.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-init.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-init.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-init-cmd.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-init-cmd.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cloud-init.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cloud-init.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cloud-init-output.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cloud-init-output.log"
+      pipe = false
+      timezone = "UTC"
+
+    [[inputs.logfile.file_config]]
+      file_path = "/var/log/cfn-wire.log"
+      from_beginning = true
+      log_group_name = "EC2-CloudWatchLogs"
+      log_stream_name = "$INSTANCE_ID/cfn-wire.log"
+      pipe = false
+      timezone = "UTC"
+    [inputs.logfile.tags]
+      metricPath = "logs"
+
+  [[inputs.mem]]
+    fieldpass = ["used_percent"]
+    [inputs.mem.tags]
+      metricPath = "metrics"
+
+[outputs]
+
+  [[outputs.cloudwatch]]
+    force_flush_interval = "60s"
+    namespace = "CWAgent"
+    region = "us-east-1"
+    tagexclude = ["host", "metricPath"]
+    [outputs.cloudwatch.tagpass]
+      metricPath = ["metrics"]
+
+  [[outputs.cloudwatchlogs]]
+    force_flush_interval = "5s"
+    log_stream_name = "$INSTANCE_ID"
+    region = "us-east-1"
+    tagexclude = ["metricPath"]
+    [outputs.cloudwatchlogs.tagpass]
+      metricPath = ["logs"]
+
+[processors]
+
+  [[processors.ec2tagger]]
+    ec2_metadata_tags = ["InstanceId"]
+    refresh_interval_seconds = "0s"
+    [processors.ec2tagger.tagpass]
+      metricPath = ["metrics"]
+
+
+EOF
+
+# https://stackoverflow.com/questions/10309968/sed-search-and-replace-strings-containing
+LINE_OLD='/opt/aws/amazon-cloudwatch-agent/bin/start-amazon-cloudwatch-agent'
+LINE_NEW='/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent -config /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.toml'
+
+sed -i "s%$LINE_OLD%$LINE_NEW%g"  /etc/systemd/system/amazon-cloudwatch-agent.service
+
+systemctl daemon-reload
+
+systemctl start amazon-cloudwatch-agent
+
+systemctl enable amazon-cloudwatch-agent
+

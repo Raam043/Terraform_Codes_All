@@ -1,0 +1,51 @@
+#!/bin/bash
+# Aurthor: Muhammad Asim
+# Purpose: S3 Automated Backups for OS Windows/Linux
+# Set LifeCycle in S3 for backup retention
+
+# Backup
+BACKUP_LOCATION="/root/jenkins-backup"
+TARGET_LOCATION="/var/jenkins_home/"
+
+cd $BACKUP_LOCATION
+
+cp -rv "$TARGET_LOCATION" .
+
+# Put the Directory/File Name in the variable FILENAME
+FILENAME="jenkins_home"
+BACKUP="$FILENAME"
+DATE=`date +'%d-%m-%Y'`
+
+
+# Compression Setup, creating a tar
+tar -czvf "$BACKUP"."$DATE".tar.gz "$BACKUP"
+
+# Upload to s3
+BUCKET_PATH="s3://cloudgeeksca/jenkins/prod/Full_Backups_Compressed"
+echo "starting upload "$BACKUP"."$DATE".tar.gz to s3 bucket $BUCKET_PATH at $(date +'%d-%m-%Y %H:%M:%S')"
+aws s3 cp "$BACKUP"."$DATE".tar.gz "$BUCKET_PATH"/"$BACKUP"."$DATE".tar.gz
+echo "finished uploading "$BACKUP"."$DATE".tar.gz to "$BUCKET_PATH" at $(date +'%d-%m-%Y %H:%M:%S')"
+
+# TAG For Retention
+BUCKET="cloudgeeksca"
+aws s3api put-object-tagging --bucket "$BUCKET" --key jenkins/prod/Full_Backups_Compressed/"$BACKUP"."$DATE".tar.gz --tagging '{"TagSet": [{ "Key": "retention", "Value": "30" }]}'
+
+echo "Clean Up"
+rm -rf *
+exit 0
+
+# # https://aws.amazon.com/premiumsupport/knowledge-center/cron-job-elastic-beanstalk/
+
+# cd /etc/cron.d 
+
+# jenkins-backups
+
+# mode: "000644"
+# owner: root
+# group: root
+# content: |
+#     0 1 * * * root chmod +x /root/jenkins-backup.sh && /root/jenkins-backup.sh
+
+
+
+#END

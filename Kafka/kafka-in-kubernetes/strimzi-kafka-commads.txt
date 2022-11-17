@@ -1,0 +1,152 @@
+# Rest Api Calls to Strimzi
+# https://docs.confluent.io/platform/current/kafka-rest/quickstart.html
+
+curl -v GET http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/healthy
+
+curl -v GET http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/ready
+
+curl -X POST \
+     -H "Content-Type: application/vnd.kafka.v2+json" \
+     --data '{"name": "ci1", "format": "json", "auto.offset.reset": "earliest"}' \
+     http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/cg1
+
+
+curl -X POST \
+     -H "Content-Type: application/vnd.kafka.v2+json" \
+     --data '{"topics":["test1"]}' \
+     http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/cg1/instances/ci1/subscription
+
+
+curl -X GET \
+     -H "Accept: application/vnd.kafka.json.v2+json" \
+     http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/cg1/instances/ci1/records 
+
+
+curl -X GET \
+     -H "Accept: application/vnd.kafka.json.v2+json" \
+     http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/cg1/instances/ci1/records    
+
+
+curl -X DELETE \
+     -H "Content-Type: application/vnd.kafka.v2+json" \
+     http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/cg1/instances/ci1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://docs.confluent.io/platform/current/tutorials/examples/clients/docs/rest-proxy.html#client-examples-rest-proxy
+ curl -v GET http://192.168.0.23:30319/healthy
+
+curl -v GET http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/healthy
+
+curl -v GET http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/ready
+
+
+# Topic Creation & Producing messages
+
+curl -X POST \
+  "http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/topics/my-topic" \
+  -H 'content-type: application/vnd.kafka.json.v2+json' \
+  -d '{
+    "records": [
+        {
+            "key": "key-1",
+            "value": "value-1"
+        },
+        {
+            "key": "key-2",
+            "value": "value-2"
+        },
+        {
+            "key": "key-3",
+            "value": "taha"
+        }
+    ]
+}'
+
+# Produce a message using JSON with the value '{ "foo": "bar" }' to the topic jsontest
+curl -X POST \
+"http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/topics/jsontest" \
+-H 'content-type: application/vnd.kafka.json.v2+json'  \
+      --data '{"records":[{"value":{"foo":"bar"}}]}' 
+
+
+
+
+------------------------------------------------------------------------------------------------
+
+# https://docs.confluent.io/2.0.0/kafka-rest/docs/intro.html#inspect-topic-metadata
+
+# Get a list of topics
+curl "http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/topics"
+ 
+
+# Get info about one topic
+curl "http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/topics/my-topic"
+  
+
+# Get info about a topic's partitions
+ curl "http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/topics/my-topic/partitions"
+
+------------------------------------------------------------------------------------------------
+  # Creating Consumers
+ curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" \
+      --data '{"name": "my_consumer_instance", "format": "json", "auto.offset.reset": "earliest"}' \
+      http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/my_json_consumer
+
+
+  ---> Output of creating consumers
+  -------------
+  {"instance_id":"my_consumer_instance","base_uri":"http://ip172-18-0-52-bvgug0np2ffg00bnk91g-32086.direct.labs.play-with-docker.com:80/consumers/my_json_consumer/instances/my_consumer_instance"}
+
+
+
+
+-----------------------------------------------------------------------------------------------------
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://strimzi.io/blog/2019/07/19/http-bridge-intro/
+
+curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" --data '{"topics":["jsontest"]}' \
+     http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/my_json_consumer/instances/my_consumer_instance/subscription
+
+
+curl -X GET -H "Accept: application/vnd.kafka.json.v2+json" \
+      http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/my_json_consumer/instances/my_consumer_instance/records
+
+
+# https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+ curl -v -X GET http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/my_json_consumer/instances/my_consumer_instance/records \
+-H 'accept: application/vnd.kafka.json.v2+json'     
+
+# Expected output from preceding command
+  [
+   {"key":null,"value":{"foo":"bar"},"partition":0,"offset":0,"topic":"jsontest"}
+  ]
+
+
+
+
+--------------------------------------------------------------------------------------------
+# No content in response
+curl -X DELETE -H "Content-Type: application/vnd.kafka.v2+json" \
+      http://ip172-18-0-55-bvi2hl2g7700009uqlag-30413.direct.labs.play-with-docker.com/consumers/my_json_consumer/instances/my_consumer_instance 

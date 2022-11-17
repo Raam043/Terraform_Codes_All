@@ -1,0 +1,9 @@
+# https://hub.docker.com/r/certbot/certbot/
+
+# https://www.bennadel.com/blog/3420-obtaining-a-wildcard-ssl-certificate-from-letsencrypt-using-the-dns-challenge.htm
+
+# DNS Challenge
+ docker run -it --rm --name letsencrypt -v "/etc/letsencrypt:/etc/letsencrypt" -v "/var/lib/letsencrypt:/var/lib/letsencrypt" quay.io/letsencrypt/letsencrypt:latest certonly -d saqlainmushtaq.com -d *.saqlainmushtaq.com --manual --preferred-challenges dns --server https://acme-v02.api.letsencrypt.org/directory
+
+# DNS Challenge with Certbot
+certbot certonly --manual --preferred-challenges dns --manual-public-ip-logging-ok -d ‘*.saqlainmushtaq.com’ -d saqlainmushtaq.com

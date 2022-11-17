@@ -1,0 +1,178 @@
+#!/bin/bash
+
+# Create a Key from AWS Console
+
+ALIAS_NAME_KMS_KEY_ID='27c3b11a-eda4-444d-9b1d-721ed053e00d'
+
+mkdir -p /root/secrets/mariadb
+mkdir -p /root/secrets/wordpress
+
+# Encryption
+
+
+aws kms encrypt --region us-east-1 --key-id $ALIAS_NAME_KMS_KEY_ID  --plaintext abc --output text --query CiphertextBlob | base64 --decode > /root/secrets/wordpress/wordpress-database-password.txt
+aws kms encrypt --region us-east-1 --key-id $ALIAS_NAME_KMS_KEY_ID  --plaintext bitnami_wordpress --output text --query CiphertextBlob | base64 --decode > /root/secrets/wordpress/wordpress-database-name.txt 
+aws kms encrypt --region us-east-1 --key-id $ALIAS_NAME_KMS_KEY_ID  --plaintext asim.arain --output text --query CiphertextBlob | base64 --decode > /root/secrets/wordpress/wordpress-database-user.txt 
+aws kms encrypt --region us-east-1 --key-id $ALIAS_NAME_KMS_KEY_ID  --plaintext mariadb --output text --query CiphertextBlob | base64 --decode > /root/secrets/wordpress/wordpress-database-host.txt 
+
+
+
+# Decryption
+
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/wordpress/wordpress-database-password.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/wordpress/wordpress-database-name.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/wordpress/wordpress-database-user.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/wordpress/wordpress-database-host.txt  --output text --query Plaintext | base64 --decode
+#END
+
+
+WORDPRESS_DATABASE_PASSWORD=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/wordpress/wordpress-database-password.txt --output text --query Plaintext | base64 --decode`
+WORDPRESS_DATABASE_NAME=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/wordpress/wordpress-database-name.txt --output text --query Plaintext | base64 --decode`
+WORDPRESS_DATABASE_USER=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/wordpress/wordpress-database-user.txt --output text --query Plaintext | base64 --decode`
+WORDPRESS_DATABASE_HOST=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/wordpress/wordpress-database-host.txt  --output text --query Plaintext | base64 --decode`
+
+
+echo "\n"
+echo "Credentials Decrypted"
+
+echo " This is Wordpress Database Password            = $WORDPRESS_DATABASE_PASSWORD "
+echo " This is Wordpress Database Name                = $WORDPRESS_DATABASE_NAME "
+echo " This is Wordpress Database User                = $WORDPRESS_DATABASE_USER "
+echo " This is Wordpress Database Host ---> POD       = $WORDPRESS_DATABASE_HOST "
+
+
+# END
+
+
+
+
+########################################################################################################################################################################
+
+
+# Note: Mention below data is just a sample data, no actual KMS keys involved.
+
+# Steps to encrypt private key via kms
+
+# KMS Key Creation from console 
+
+1. Create a Customer managed key
+
+2. Grab the Key ID: 7702849e-2bc0-4697-ad62-303523cacd9a
+
+3. Use this Key ID with region details in mentioned below examples.
+
+
+
+# Example 1
+
+# Encryption ### ### File ### ---> size 4Kb
+
+
+
+# Private key Encrypion 
+aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a --plaintext fileb://id_rsa --output text --query CiphertextBlob | base64 --decode > id_rsa_encrypted
+  
+
+    
+# Private Key Decryption
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb://id_rsa_encrypted --output text --query Plaintext | base64 --decode > id_rsa
+
+
+# Example 2
+
+
+### Encryption ###  ### Plain Text ###
+
+# Steps to encrypt secrets via kms
+
+
+
+# 1. aws kms list-keys --region us-east-1
+
+# Encryption
+
+# 2. 
+
+    aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a  --plaintext "abc" --output text --query CiphertextBlob | base64 --decode > password.txt
+    
+    aws kms encrypt --region us-east-1 --key-id 7702849e-2bc0-4697-ad62-303523cacd9a  --plaintext "reptrak" --output text --query CiphertextBlob | base64 --decode > databasename.txt
+    
+    
+# Decryption     
+
+# 3. 
+ 
+     aws kms decrypt --region us-east-1 --ciphertext-blob fileb://password.txt --output text --query Plaintext | base64 --decode 
+
+     aws kms decrypt --region us-east-1 --ciphertext-blob fileb://databasename.txt --output text --query Plaintext | base64 --decode 
+
+   
+
+
+# How to use KMS Encryption in docker ?
+
+
+# Demo application docker
+
+#!/bin/bash
+
+mkdir -p /root/secrets
+
+# Encryption
+
+
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext 12345678 --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-root-password.txt
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext bitnami_wordpress --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-database.txt
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext asim.arain --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-user.txt
+aws kms encrypt --region us-east-1 --key-id baa7e043-02e1-4a87-8ece-4b13d957d3dd  --plaintext 12345678 --output text --query CiphertextBlob | base64 --decode > /root/secrets/mariadb-password.txt
+
+
+
+# Decryption
+
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-root-password.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-database.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-user.txt --output text --query Plaintext | base64 --decode
+aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-password.txt  --output text --query Plaintext | base64 --decode
+#END
+
+
+MARIADB_ROOT_PASSWORD=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-root-password.txt --output text --query Plaintext | base64 --decode`
+MARIADB_DATABASE=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-database.txt --output text --query Plaintext | base64 --decode`
+MARIADB_USER=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-user.txt --output text --query Plaintext | base64 --decode`
+MARIADB_PASSWORD=`aws kms decrypt --region us-east-1 --ciphertext-blob fileb:///root/secrets/mariadb-password.txt  --output text --query Plaintext | base64 --decode`
+
+
+echo "\n"
+echo "Credentials Decrypted"
+
+echo " This is Mariadb root password = $MARIADB_ROOT_PASSWORD "
+echo " This is Mariadb database name  = $MARIADB_DATABASE "
+echo " This is Mariadb User = $MARIADB_USER "
+echo " This is Mariadb password = $MARIADB_PASSWORD "
+
+
+# Demo Application Wordpress
+
+# Create a network
+docker network create bitnami-wordpress-tier
+
+# Mariadb Setup
+docker run --name mariadb --user=root -e MARIADB_DATABASE="$MARIADB_DATABASE" -e MARIADB_ROOT_PASSWORD="$MARIADB_ROOT_PASSWORD" -v /root/mariadb:/bitnami --network="bitnami-wordpress-tier" --restart unless-stopped -d bitnami/mariadb:latest
+
+# Wordpress Setup
+docker run --name bitnami-wordpress -u root --network="bitnami-wordpress-tier" -e WORDPRESS_DATABASE_NAME="$MARIADB_DATABASE" -e WORDPRESS_DATABASE_USER="root" -e WORDPRESS_DATABASE_PASSWORD="$MARIADB_ROOT_PASSWORD" --link mariadb:db -v /root/wordpress:/bitnami --restart unless-stopped -d bitnami/wordpress:latest
+
+
+# END
+
+
+
+
+
+
+
+
+
+
+

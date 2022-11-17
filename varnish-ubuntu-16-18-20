@@ -1,0 +1,168 @@
+# Varnish Setup
+OS: # UBUNTU/16/18/20
+
+Step 1: Install Apache
+-------------------------
+# Before you begin, update the package list information to ensure we are installing the newest versions of software applications:
+
+apt update -y
+
+# Then install Apache web server using the command below:
+
+apt install -y apache2
+
+
+systemctl start apache2
+
+systemctl enable apache2
+
+
+Step 2: Install Varnish HTTP Cache
+------------------------------------
+# Now that Apache is running, we can install Varnish HTTP Cache using the command below:
+
+
+apt install -y varnish
+
+apt install -f nano
+
+
+
+Step 3: Change Apache and Varnish HTTP Cache listening ports
+--------------------------------------------------------------
+By default, Apache listens on port 80 for HTTP traffic. We need to make some changes here. Instead of the default settings, Varnish will instead listen on port 80  and forward all traffic to Apache web server which we will configure to listen on port 8080.
+
+First, let’s assign port 8080 to Apache web server. To do this, edit the file ‘/etc/apache2/ports.conf’ file using a nano editor.
+
+##################################
+nano /etc/apache2/ports.conf
+##################################
+Listen 8080
+<IfModule ssl_module>
+        Listen 443
+</IfModule>
+<IfModule mod_gnutls.c>
+        Listen 443
+</IfModule>
+Press CTRL + X, Y and hit Enter to save the file once you make the changes.
+Next, edit the default Apache Virtual Host to listen to port 8080 too:
+
+#################################################
+nano /etc/apache2/sites-enabled/000-default.conf
+#################################################
+<VirtualHost *:8080> 
+...
+</VirtualHost>
+Press CTRL + X, Y and Enter to save the file
+
+systemctl daemon-reload
+systemctl restart apache2
+systemctl status apache2
+
+
+If you attempt to reach your website again from a browser, you will get an error. However, you can append port 8080 on your IP address to reach your server:
+
+
+
+apt install -y curl
+
+curl http://127.0.0.1:8080
+
+
+Step 4: Configure Varnish HTTP Cache to listen on port 80
+----------------------------------------------------------
+Next we will configure Varnish to listen on port 80 and forward all requests to our Apache web server.
+
+We can do this by editing Varnish configuration file ‘/etc/default/varnish’
+
+#########################################
+nano  /etc/default/varnish
+#########################################
+Look for the directive ‘DAEMON_OPTS’ and change the listening port to 80.
+
+DAEMON_OPTS="-a :80 \
+             -T localhost:6082 \
+             -f /etc/varnish/default.vcl \
+             -S /etc/varnish/secret \
+             -s malloc,256m"
+Then, press CTRL + X, Y and hit Enter to save the file.
+
+Next, check the file ‘/etc/varnish/default.vcl’ using a nano text editor. You should see the below content and this means Varnish will forward http traffic to port 8080:
+
+We also need to edit the port on the file ‘/lib/systemd/system/varnish.service’ file. To do so, type the command below:
+
+#########################################
+nano /lib/systemd/system/varnish.service
+##########################################
+Change the default port from 6081 to 80 as shown below
+
+
+###############################
+nano /etc/varnish/default.vcl
+###############################
+
+File contents:
+
+# Default backend definition. Set this to point to your content server.
+backend default {
+.host = "127.0.0.1";
+.port = "8080";
+}
+
+
+curl http://127.0.0.1:8080
+------------------------------------------------------------------------------------------------------------------------------
+# UBUNTU/16/18/20
+# SYSTEMD
+
+Step 4: Restart Apache, Varnish, and the Systemd Daemon
+---------------------------------------------------------
+To reload the changes, we can restart Apache, Varnish and Systemd Daemon using the commands below:
+
+systemctl daemon-reload
+systemctl restart apache2
+systemctl daemon-reload
+systemctl restart varnish
+systemctl status varnish
+
+systemctl enable varnish
+
+# If the setup was successful, Varnish will now be the default HTTP Listener on port 80.
+----------------------------------------------------------------------------------------------------------------------
+
+
+Step 6: Testing the Setup
+-----------------------------
+You can now try visiting your server one more time on a web browser:
+
+http://public_ip_adress
+Or
+
+http://example.com
+The server traffic should now be handled by Varnish HTTP Cache software and forwarded to Apache.
+
+To make sure that Varnish is working, use the curl command for verification purposes:
+
+# curl -I server_ip_address
+You should get an output similar to the below text. If you see the line ‘Via: 1.1 varnish (Varnish/5.2)’, then Varnish is working like expected.
+
+HTTP/1.1 200 OK
+Date: Thu, 05 Jul 2018 20:56:11 GMT
+Server: Apache/2.4.29 (Ubuntu)
+Last-Modified: Fri, 29 Jun 2018 07:19:34 GMT
+Vary: Accept-Encoding
+Content-Type: text/html
+X-Varnish: 7
+Age: 0
+Via: 1.1 varnish (Varnish/5.2)
+ETag: W/"2aa6-56fc2ab77545d-gzip"
+Accept-Ranges: bytes
+Connection: keep-alive
+
+
+
+
+
+# Conclusion
+---------------
+In this guide, we have shown you how to setup Varnish HTTP cache software on your Ubuntu 20 server. If you followed the setup guide completely, your website should now load faster because Varnish will retrieve most of the frequently requested content from the memory.

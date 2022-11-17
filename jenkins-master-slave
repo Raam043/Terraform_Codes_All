@@ -1,0 +1,93 @@
+# Docker Jenkins Master
+
+yum update -y
+yum install -y docker
+systemctl start docker
+systemctl enable docker
+
+docker run --name jenkins-master -d --user=root -v /root:/root -v /root/jenkins-master:/var/jenkins_home -p 8085:8080 -p 50000:50000 -v $(which docker):/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock --restart unless-stopped jenkins/jenkins:lts
+
+# Docker Slave (Note: No containers required)
+
+# OS Amazon Linux
+
+# Docker Installation
+
+yum install -y docker
+
+systemctl start docker
+
+systemctl enable docker
+
+# Java installation
+
+# https://tecadmin.net/install-java-on-amazon-linux/
+# Step 1 – Install Java on Amazon Linux
+
+# The OpenJDK 8 is available under default yum repositories and OpenJDK 11 is available under Amazon Linux 2 extras repositories. You can simply install Java 11 or Java 8 on the Amazon Linux system using the following commands.
+
+# Run below commands to install Java 11 on Amazon Linux:
+
+amazon-linux-extras install java-openjdk11
+
+# Run below commands to install Java 8 on Amazon Linux:
+
+
+yum install java-1.8.0-openjdk
+
+
+# Step 2 – Check Active Java Version
+# After successfully installing Java on Amazon Linux using the above steps, Let’s verify the installed version using the following command.
+
+java -version
+
+openjdk version "1.8.0_222"
+OpenJDK Runtime Environment (build 1.8.0_222-8u222-b10-1ubuntu1~18.04.1-b10)
+OpenJDK 64-Bit Server VM (build 25.222-b10, mixed mode)
+
+# Step 3 – Switch Java Version
+# Use alternatives command-line utility to switch active Java version on your Amazon Linux system. Run below command from the command line and select the appropriate Java version to make it default.
+
+alternatives --config java
+Install Java on Amazon Linux
+
+# After switching let’s check again active Java version:
+
+java -version 
+
+
+
+# Jenkins Slave Dir
+
+cd /root/jenkins-slave-1
+
+curl -# -LO file.jar 
+
+# copy the provided command in Jenkins master & run in background ---> &
+
+# or Create a service
+
+#!/bin/bash
+
+
+/bin/java -jar /root/jenkins-slave-1/agent.jar -jnlpUrl http://jenkins.cloudgeeks.ca:8085/computer/jenkins-slave-1/jenkins-agent.jnlp -secret pakaksjjsjshdhhdhdhhdgdggsgsgvdvdggssvsvvsgaggagaga -workDir "/root/jenkins-slave-1"
+
+#END
+
+
+# Ubuntu, Amazonlinux2 & Centos7
+cd /etc/systemd/system/jenkins-service-1.service
+
+[Unit]
+Description=jenkins-slave-1 service
+
+[Service]
+ExecStart=/root/jenkins-slave-1/jenkins-slave-1.sh
+
+[Install]
+WantedBy=multi-user.target
+
+
+https://www.youtube.com/watch?v=jaaMNK0Df8U
+
+# END

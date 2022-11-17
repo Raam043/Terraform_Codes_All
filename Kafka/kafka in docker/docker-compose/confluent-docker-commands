@@ -1,0 +1,39 @@
+# https://docs.confluent.io/platform/current/quickstart/cos-docker-quickstart.html
+# https://github.com/quickbooks2018/aws/blob/master/Kafka/kafka%20in%20docker/docker-compose/docker-compose.yaml
+
+# Create Kafka Topics
+
+docker-compose exec broker kafka-topics --create --bootstrap-server \
+localhost:9092 --replication-factor 1 --partitions 1 --topic my-topic
+
+# Alter Topic partitions
+docker exec broker kafka-topics --bootstrap-server localhost:9092 --alter --topic my-topic --partitions 5
+
+
+# List Topic
+--------------
+# docker exec broker kafka-topics  --list --zookeeper zookeeper:2181
+
+# Describe a topic
+-------------------
+# docker exec broker kafka-topics  --describe --topic my-topic --zookeeper zookeeper:2181
+
+# Creating Producers
+---------------------
+# docker exec -it broker kafka-console-producer --bootstrap-server localhost:9092 --topic my-topic
+
+  # Creating Consumers
+  ---------------------
+ # docker exec -it broker kafka-console-consumer --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+
+  # Listing Consumers Groups
+  --------------------------
+  # docker exec broker kafka-consumer-groups --bootstrap-server localhost:9092 --list
+
+  # Describe Consumers Groups
+  ----------------------------
+  # docker exec broker kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group GROUPNAME
+
+  # Consumer Offsets  (Consumer information stored in consumer offsets by kafka)
+  --------------------------------------------------------------------------------
+  # docker exec broker kafka-topics --bootstrap-server localhost:9092 --list

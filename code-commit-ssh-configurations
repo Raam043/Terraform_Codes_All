@@ -1,0 +1,35 @@
+#######################
+Step 1: Prerequisites
+######################
+You must use a Git client that supports Git version 1.7.9 or later to connect to an AWS CodeCommit repository. If you do not have a Git client, you can install one from Git downloads. View Git downloads page
+
+You must have an AWS CodeCommit managed policy attached to your IAM user, belong to a CodeStar project team, or have the equivalent permissions. Learn how to create and configure an IAM user for accessing AWS CodeCommit. | Learn how to add team members to an AWS CodeStar Project.
+
+You must have an SSH public-private key pair. Open the Bash emulator and create a public-private key pair using ssh-keygen. Learn how to generate public-private key pair
+
+###############################
+Step 2: Register SSH Public Key
+###############################
+Upload your SSH public key to your IAM user. Learn how to upload your SSH public key
+
+Once you have uploaded your SSH public key, copy the SSH Key ID. You will need it in the next step.
+
+#####################################
+Step 3: Edit Local SSH Configuration
+#####################################
+Edit your SSH configuration file named "config" in your local ~/.ssh directory. Add the following lines to the file, where the value for User is the SSH Key ID you copied in Step 2.
+
+Host git-codecommit.*.amazonaws.com
+User Your-IAM-SSH-Key-ID-Here
+IdentityFile ~/.ssh/Your-Private-Key-File-Name-Here
+Once you have saved the file, make sure it has the right permissions by running the following command in the ~/.ssh directory.
+
+chmod 600 config
+
+##############################
+Step 4: Clone the repository
+##############################
+
+Clone your repository to your local computer and start working on code. Run the following command:
+
+git clone ssh://git-codecommit.us-east-1.amazonaws.com/v1/repos/yourrep

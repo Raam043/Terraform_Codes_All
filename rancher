@@ -1,0 +1,7 @@
+Note: Alnternative of Kind
+
+https://rancher.com/quick-start
+
+docker run --name rancher --privileged -id --restart=unless-stopped -p 80:80 -p 443:443 rancher/rancher:latest
+
+https://hub.docker.com/r/rancher/rancher

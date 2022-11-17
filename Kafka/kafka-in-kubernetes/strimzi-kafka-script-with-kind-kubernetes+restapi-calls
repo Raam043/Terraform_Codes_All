@@ -1,0 +1,642 @@
+#!/bin/bash
+# Purpose: Kafka Cluster In Kubernetes
+# Maintainer DevOps <Muhammad Asim <quickbooks2018@gmail.com>
+
+# Kubectl Installation
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x ./kubectl
+mv ./kubectl /usr/local/bin/kubectl
+kubectl version --client
+
+# Kind Installation
+# Latest Version
+# 
+curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-amd64"
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
+chmod +x ./kind
+mv ./kind /usr/local/bin
+
+# Cluster Creation
+
+ kind create cluster --name cloudgeeks-ca --image kindest/node:v1.19.0
+
+
+ kubectl cluster-info --context kind-cloudgeeks-ca
+
+# Strimzi Kafka Setup
+
+# Operator Installation
+
+kubectl create ns kafka
+
+kubectl apply -f "https://strimzi.io/install/latest?namespace=kafka"
+
+
+sleep 30
+# cloudgeeks-ca Installation with replication (Internal) ---> ephemeral storage nodeport
+
+cat << 'EOF' > strimzi-kafka.yaml
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: cloudgeeks-ca-kafka
+  namespace: kafka
+spec:
+  kafka:
+    version: 2.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external
+        port: 9094
+        type: nodeport
+        tls: false
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      log.message.format.version: "2.6"
+    storage:
+      type: ephemeral  
+  zookeeper:
+    replicas: 3
+    storage:
+      type: ephemeral
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+EOF
+kubectl apply -f strimzi-kafka.yaml
+
+sleep 30
+# Strimzi Kafka Bridge Setup
+
+cat << 'EOF' > strimzi-kafka-bridge.yaml
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaBridge
+metadata:
+  name: cloudgeeks-ca-bridge
+  namespace: kafka
+spec:
+  replicas: 3
+  bootstrapServers: cloudgeeks-ca-kafka-kafka-bootstrap:9092
+  http:
+    port: 8080
+EOF
+kubectl apply -f strimzi-kafka-bridge.yaml
+
+sleep 30
+# Expose the Stimzi Kafka Bridge
+
+kubectl expose deployment cloudgeeks-ca-bridge-bridge --type=NodePort  --protocol TCP --port 80 --target-port 8080 --name=cloudgeeks-ca-bridge-exposed  -n kafka
+
+echo -e "\nHello from cloudgeeks.ca  do this part manually ok\n"
+
+echo -e "\nMentioned below is an example simply replace the ports an shown in mentioned below example OK"
+
+echo -e "\nkubectl port-forward svc/cloudgeeks-ca-bridge-exposed --address 0.0.0.0 31921:80 -n kafka &\n"
+
+echo -e "\nEnjoy :)\n"
+    
+    
+#END
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Different Strimzi kafka bridge
+# Simple do kubectl edit deployment/cloudgeeks-ca-bridge-bridge -n kafka
+# kubectl rollout status deployment/cloudgeeks-ca-bridge-bridge -n kafka
+
+
+# kubectl expose deployment cloudgeeks-ca-bridge-bridge --type=NodePort  --protocol TCP --port 80 --target-port 8080 --name=cloudgeeks-ca-bridge-exposed  -n kafka
+
+# kubectl expose deployment cloudgeeks-ca-bridge-bridge --type=NodePort --name=cloudgeeks-kafka-exposed -n kafka
+
+
+
+
+
+
+
+
+
+
+
+# https://hub.docker.com/r/strimzi/kafka-bridge
+# https://access.redhat.com/documentation/en-us/red_hat_amq/7.5/html/using_amq_streams_on_rhel/kafka-bridge-concepts-str#proc-downloading-kafka-bridge-kafka-bridge-overview
+# https://stackoverflow.com/questions/40366192/kubernetes-how-to-make-deployment-to-update-image
+# Update the image of existing deployment # https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+
+# kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1 --record
+
+
+#  Container in a pod
+#  kubectl get pods POD_NAME_HERE -o jsonpath='{.spec.containers[*].name}'
+# ----> kubectl set image deployment/cloudgeeks-ca-bridge-bridge cloudgeeks-ca-bridge-bridge=strimzi/kafka-bridge:0.18.0 -n kafka --record
+
+
+
+# List
+# https://kubernetes.io/docs/tasks/access-application-cluster/list-all-running-container-images/
+# https://stackoverflow.com/questions/33924198/how-do-you-cleanly-list-all-the-containers-in-a-kubernetes-pod
+#
+
+#  Container in a pod
+#  kubectl get pods POD_NAME_HERE -o jsonpath='{.spec.containers[*].name}'
+#
+#  kubectl get pods cloudgeeks-ca-bridge-bridge-5694dc7dc5-8rpd2 -o jsonpath='{.spec.containers[*].name}' -n kafka
+#
+#  # Shell
+#  # https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-container/
+#  In a container which is in a POD
+#
+#  kubectl exec -it -n kafka cloudgeeks-ca-bridge-bridge-5694dc7dc5-8rpd2 --container cloudgeeks-ca-bridge-bridge -- /bin/bash
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+# Rest Api Calls to Strimzi
+# Rest Api Calls to Strimzi
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://docs.confluent.io/platform/current/tutorials/examples/clients/docs/rest-proxy.html#client-examples-rest-proxy
+# https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+
+
+
+
+curl -v GET http://localhost:8080/healthy
+
+curl -v GET http://localhost:8080/healthy
+
+curl -v GET http://localhost:8080/ready
+
+
+# Topic Creation & Producing messages
+
+
+# Produce a message using JSON with the value '{ "foo": "bar" }' to the topic jsontest
+curl -X POST \
+"http://localhost:8080/topics/jsontest" \
+-H 'content-type: application/vnd.kafka.json.v2+json'  \
+      --data '{"records":[{"value":{"foo":"bar"}}]}' 
+
+
+
+
+------------------------------------------------------------------------------------------------
+
+# https://docs.confluent.io/2.0.0/kafka-rest/docs/intro.html#inspect-topic-metadata
+
+# Get a list of topics
+curl "http://localhost:8080/topics"
+ 
+
+# Get info about one topic
+curl "http://localhost:8080/topics/jsontest"
+  
+
+# Get info about a topic's partitions
+ curl "http://localhost:8080/topics/jsontest/partitions"
+
+------------------------------------------------------------------------------------------------
+  # Creating Consumers
+ curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" \
+      --data '{"name": "my_consumer_instance", "format": "json", "auto.offset.reset": "earliest"}' \
+      http://localhost:8080/consumers/my_json_consumer
+
+
+  ---> Output of creating consumers
+  -------------
+  {"instance_id":"my_consumer_instance","base_uri":"http://ip172-18-0-52-bvgug0np2ffg00bnk91g-32086.direct.labs.play-with-docker.com:80/consumers/my_json_consumer/instances/my_consumer_instance"}
+
+
+
+
+-----------------------------------------------------------------------------------------------------
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://strimzi.io/blog/2019/07/19/http-bridge-intro/
+
+curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" --data '{"topics":["jsontest"]}' \
+     http://localhost:8080/consumers/my_json_consumer/instances/my_consumer_instance/subscription
+
+
+curl -X GET -H "Accept: application/vnd.kafka.json.v2+json" \
+      http://localhost:8080/consumers/my_json_consumer/instances/my_consumer_instance/records
+
+
+# https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+ curl -X GET http://localhost:8080/consumers/my_json_consumer/instances/my_consumer_instance/records \
+-H 'accept: application/vnd.kafka.json.v2+json'     
+
+# Expected output from preceding command
+  [
+   {"key":null,"value":{"foo":"bar"},"partition":0,"offset":0,"topic":"jsontest"}
+  ]
+
+
+
+
+--------------------------------------------------------------------------------------------
+# No content in response
+curl -X DELETE -H "Content-Type: application/vnd.kafka.v2+json" \
+      http://localhost:8080/consumers/my_json_consumer/instances/my_consumer_instance 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://docs.confluent.io/platform/current/tutorials/examples/clients/docs/rest-proxy.html#client-examples-rest-proxy
+# https://strimzi.io/blog/2019/07/19/http-bridge-intro/
+# https://access.redhat.com/documentation/en-us/red_hat_amq/7.5/html/using_amq_streams_on_rhel/kafka-bridge-concepts-str#proc-downloading-kafka-bridge-kafka-bridge-overview
+
+
+curl -v GET http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/healthy
+
+curl -v GET http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/ready
+
+
+# Topic Creation & Producing messages
+
+curl -X POST \
+  "http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/topics/my-topic" \
+  -H 'content-type: application/vnd.kafka.json.v2+json' \
+  -d '{
+    "records": [
+        {
+            "key": "key-1",
+            "value": "value-1"
+        },
+        {
+            "key": "key-2",
+            "value": "value-2"
+        },
+        {
+            "key": "key-3",
+            "value": "taha"
+        }
+    ]
+}'
+
+# Produce a message using JSON with the value '{ "foo": "bar" }' to the topic jsontest
+curl -X POST \
+"http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/topics/jsontest" \
+-H 'content-type: application/vnd.kafka.json.v2+json'  \
+      --data '{"records":[{"value":{"foo":"bar"}}]}' 
+
+
+
+
+------------------------------------------------------------------------------------------------
+
+# https://docs.confluent.io/2.0.0/kafka-rest/docs/intro.html#inspect-topic-metadata
+
+# Get a list of topics
+curl "http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/topics"
+ 
+
+# Get info about one topic
+curl "http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/topics/my-topic"
+  
+
+# Get info about a topic's partitions
+ curl "http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/topics/my-topic/partitions"
+
+------------------------------------------------------------------------------------------------
+  # Creating Consumers
+ curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" \
+      --data '{"name": "my_consumer_instance", "format": "json", "auto.offset.reset": "earliest"}' \
+      http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/consumers/my_json_consumer
+
+
+  ---> Output of creating consumers
+  -------------
+  {"instance_id":"my_consumer_instance","base_uri":"http://ip172-18-0-52-bvgug0np2ffg00bnk91g-32086.direct.labs.play-with-docker.com:80/consumers/my_json_consumer/instances/my_consumer_instance"}
+
+
+
+
+-----------------------------------------------------------------------------------------------------
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://strimzi.io/blog/2019/07/19/http-bridge-intro/
+
+curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" --data '{"topics":["jsontest"]}' \
+     http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/consumers/my_json_consumer/instances/my_consumer_instance/subscription
+
+
+curl -X GET -H "Accept: application/vnd.kafka.json.v2+json" \
+      http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/consumers/my_json_consumer/instances/my_consumer_instance/records
+      
+      
+ # https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+ curl -X GET http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/consumers/my_json_consumer/instances/my_consumer_instance/records \
+-H 'accept: application/vnd.kafka.json.v2+json'     
+
+
+# Expected output from preceding command
+  [
+   {"key":null,"value":{"foo":"bar"},"partition":0,"offset":0,"topic":"jsontest"}
+  ]
+
+
+
+
+--------------------------------------------------------------------------------------------
+# No content in response
+curl -X DELETE -H "Content-Type: application/vnd.kafka.v2+json" \
+      http://ip172-18-0-123-bvgvcbfp2ffg00bnkbd0-30031.direct.labs.play-with-docker.com/consumers/my_json_consumer/instances/my_consumer_instance 
+      
+      
+      
+Strimzi Kafka with Extra Options      
+################################################################################################################################################################
+
+#!/bin/bash
+# Purpose: Kafka Cluster In Kubernetes
+# Maintainer DevOps <Muhammad Asim <quickbooks2018@gmail.com>
+
+# Kubectl Installation
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x ./kubectl
+mv ./kubectl /usr/local/bin/kubectl
+kubectl version --client
+
+# Kind Installation
+# Latest Version
+# https://github.com/kubernetes-sigs/kind
+curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-amd64"
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64
+# curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
+chmod +x ./kind
+mv ./kind /usr/local/bin
+
+# Cluster Creation
+
+ kind create cluster --name cloudgeeks-ca --image kindest/node:v1.18.8
+
+
+ kubectl cluster-info --context kind-cloudgeeks-ca
+
+# Strimzi Kafka Setup
+
+# Operator Installation
+
+kubectl create ns kafka
+
+kubectl apply -f "https://strimzi.io/install/latest?namespace=kafka"
+
+
+sleep 30
+# cloudgeeks-ca Installation with replication (Internal) ---> ephemeral storage nodeport
+
+cat << 'EOF' > strimzi-kafka.yaml
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: cloudgeeks-ca-kafka
+  namespace: kafka
+spec:
+  kafka:
+    version: 2.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external
+        port: 9094
+        type: nodeport
+        tls: false
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      log.message.format.version: "2.6"
+    storage:
+      type: ephemeral  
+  zookeeper:
+    replicas: 3
+    storage:
+      type: ephemeral
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+EOF
+kubectl apply -f strimzi-kafka.yaml
+
+sleep 30
+# Strimzi Kafka Bridge Setup
+
+
+
+# https://strimzi.io/docs/operators/latest/overview.html
+cat << 'EOF' > strimzi-kafka-bridge.yaml
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaBridge
+metadata:
+  name: cloudgeeks-ca-bridge
+  namespace: kafka
+spec:
+  replicas: 1
+  bootstrapServers: cloudgeeks-ca-kafka-kafka-bootstrap:9092
+  http:
+    port: 8080
+EOF
+
+kubectl apply -f strimzi-kafka-bridge.yaml
+
+sleep 30
+# Expose the Stimzi Kafka Bridge
+
+kubectl expose deployment cloudgeeks-ca-bridge-bridge --type=NodePort  --protocol TCP --port 80 --target-port 8080 --name=cloudgeeks-ca-bridge-exposed  -n kafka
+
+echo -e "\nHello from cloudgeeks.ca  do this part manually ok\n"
+
+echo -e "\nMentioned below is an example simply replace the ports an shown in mentioned below example OK"
+
+echo -e "\nkubectl port-forward svc/cloudgeeks-ca-bridge-exposed --address 0.0.0.0 31921:80 -n kafka &\n"
+
+echo -e "\nEnjoy :)\n"
+    
+    
+#END
+
+
+---------------------------------------------------------------------------------------
+
+# Rest Api Calls to Strimzi
+# https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+# https://strimzi.io/docs/operators/latest/using.html
+# https://docs.confluent.io/platform/current/kafka-rest/quickstart.html
+
+
+
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://docs.confluent.io/platform/current/tutorials/examples/clients/docs/rest-proxy.html#client-examples-rest-proxy
+
+
+
+
+ curl -v GET http://localhost:31951/healthy
+
+curl -v GET http://localhost:31951/healthy
+
+curl -v GET http://localhost:31951/ready
+
+
+
+# Topic Creation & Producing messages
+
+curl -X POST \
+  "http://localhost:31951/topics/my-topic" \
+  -H 'Origin: http://localhost' \
+  -H 'content-type: application/vnd.kafka.json.v2+json' \
+  -d '{
+    "records": [
+        {
+            "key": "key-1",
+            "value": "value-1"
+        },
+        {
+            "key": "key-2",
+            "value": "value-2"
+        },
+        {
+            "key": "key-3",
+            "value": "taha"
+        }
+    ]
+}'
+
+curl -v -X POST http://localhost:31951/topics/my-topic \
+-H 'Origin: http://localhost' \
+-H 'content-type: application/vnd.kafka.v2+json'
+
+
+
+------------------------------------------------------------------------------------------------
+
+# https://docs.confluent.io/2.0.0/kafka-rest/docs/intro.html#inspect-topic-metadata
+
+# Get a list of topics
+curl "http://localhost:31951/topics"
+ 
+
+# Get info about one topic
+curl "http://localhost:31951/topics/my-topic"
+  
+
+# Get info about a topic's partitions
+ curl "http://localhost:31951/topics/my-topic/partitions"
+
+------------------------------------------------------------------------------------------------
+  # Creating Consumers
+ curl -X POST http://localhost:31951/consumers/my-group \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "name": "my-consumer",
+    "format": "json",
+    "auto.offset.reset": "earliest",
+    "enable.auto.commit": false
+  }'
+
+  ---> Output of creating consumers
+  -------------
+ {"instance_id":"my-consumer","base_uri":"http://localhost:31951/consumers/my-group/instances/my-consumer"}
+
+# Subscribing to the topic
+curl -X POST http://localhost:31951/consumers/my-group/instances/my-consumer/subscription \
+  -H 'Origin: http://localhost' \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "topics": [
+        "my-topic"
+    ]
+}'
+
+
+# Consuming messages
+
+
+curl -v -X GET http://localhost:31951/consumers/my-group/instances/my-consumer/records \
+  -H 'accept: application/vnd.kafka.json.v2+json'
+
+curl -v -X GET -H "Accept: application/vnd.kafka.json.v2+json" \
+      http://localhost:31951/consumers/my-group/instances/my-consumer/records
+
+
+-----------------------------------------------------------------------------------------------------
+# https://stackoverflow.com/questions/57080839/how-to-create-consumer-using-rest-api-to-read-json-data-from-kafka-topic
+# https://strimzi.io/blog/2019/07/19/http-bridge-intro/
+
+curl -X POST -H "Content-Type: application/vnd.kafka.v2+json" \
+          --data '{"name": "my_consumer_instance", "format": "json", "auto.offset.reset": "earliest"}' \
+          http://localhost:31951/consumers/my_json_consumer
+          
+
+curl -X POST -H 'Origin: http://localhost' -H "Content-Type: application/vnd.kafka.v2+json" --data '{"topics":["jsontest"]}' \
+     http://localhost:31951/consumers/my_json_consumer/instances/my_consumer_instance/subscription
+
+
+curl -X GET -H "Accept: application/vnd.kafka.json.v2+json" \
+      http://localhost:31951/consumers/my_json_consumer/instances/my_consumer_instance/records
+
+
+# https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+ curl -v -X GET  http://localhost:31951/consumers/my_json_consumer/instances/my_consumer_instance/records \
+-H 'accept: application/vnd.kafka.json.v2+json'     
+
+# Expected output from preceding command
+  [
+   {"key":null,"value":{"foo":"bar"},"partition":0,"offset":0,"topic":"jsontest"}
+  ]
+
+
+
+
+--------------------------------------------------------------------------------------------
+# No content in response
+curl -X DELETE -H 'Origin: http://localhost:31951' -H "Content-Type: application/vnd.kafka.v2+json" \
+      http://localhost:31951/consumers/my_json_consumer/instances/my_consumer_instance 

@@ -1,0 +1,26 @@
+#!/bin/bash
+# https://github.com/terraform-linters/tflint
+# https://github.com/terraform-linters/tflint
+
+# Installation
+
+curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+cat << EOF > .tflint.hcl
+plugin "aws" {
+    enabled = true
+    version = "0.12.0"
+    source  = "github.com/terraform-linters/tflint-ruleset-aws"
+}
+
+EOF
+
+tflint --init
+
+# End
+
+# tflint --help
+
+# tflinit --init
+
+# tflinit  # this will validate your terraform code

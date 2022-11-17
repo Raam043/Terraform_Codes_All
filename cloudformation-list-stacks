@@ -1,0 +1,11 @@
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-describing-stacks.html
+
+
+aws cloudformation list-stacks
+
+aws cloudformation list-stacks | grep -i eks
+
+aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE
+
+
+

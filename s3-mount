@@ -1,0 +1,276 @@
+# S3 Mount with Role
+-----------------------
+#!/bin/bash
+#Purpose: S3 Mount via Role
+#Maintainer: Muhammad Asim <quickbook2018@gmail.com>
+# OS: AmazonLinux
+# S3: Permissions Level Full Access
+
+
+
+
+yum update -y
+amazon-linux-extras install -y epel
+yum install -y s3fs-fuse
+
+
+
+iam_role=s3-mount
+mount_point=/root/s3
+bucket_name=cloudgeeks.ca
+
+mkdir -p $mount_point
+
+
+/bin/s3fs "$bucket_name" "$mount_point" -o iam_role=${iam_role} -o allow_other -o use_path_request_style
+/bin/s3fs "$bucket_name" "$mount_point" -o iam_role=${iam_role} -o allow_other -o use_path_request_style -o dbglevel=info -f -o curldbg
+
+
+# Persistent Mount after reboot  /etc/fstab format
+
+# cloudgeeks.ca   /root/s3       fuse.s3fs _netdev,allow_other,use_path_request_style 0 0
+echo ""$bucket_name" "$mount_point" fuse.s3fs _netdev,allow_other,use_path_request_style,iam_role=${iam_role} 0 0" >> /etc/fstab
+
+
+
+#DEBUG -o dbglevel=info -f -o curldbg
+#PATH  -o url="https://s3.us-east-1.amazonaws.com"
+# cat /etc/fuse.conf
+
+#END
+
+
+# S3 Mount with Keys
+---------------------
+#!/bin/bash
+#Purpose: S3 Mount via Access Keys
+#Maintainer: Muhammad Asim <quickbook2018@gmail.com>
+# OS: Ubuntu/Mac
+# S3: Permissions Level Full Access
+
+
+ACCESS_KEY_ID=AKIAZOHDTSD75JKM37IF
+SECRET_ACCESS_KEY=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
+mount_point=""$PWD"/s3"
+bucket_name=cloudgeeks-ca
+
+# Ubuntu
+apt update -y
+apt install -y s3fs
+
+# AmazonLinux
+#amazon-linux-extras install -y epel
+#yum install -y s3fs-fuse
+
+# MACOS
+#brew install --cask osxfuse
+#brew install s3fs
+
+echo ""$ACCESS_KEY_ID":"$SECRET_ACCESS_KEY"" > ${HOME}/.passwd-s3fs
+chmod 600 ${HOME}/.passwd-s3fs
+
+
+
+
+
+
+mkdir -p $mount_point
+
+
+/usr/bin/s3fs "$bucket_name" "$mount_point" -o passwd_file=${HOME}/.passwd-s3fs -o allow_other -o use_path_request_style
+
+/usr/bin/s3fs "$bucket_name" "$mount_point" -o passwd_file=${HOME}/.passwd-s3fs -o allow_other -o use_path_request_style o dbglevel=info -f -o curldbg
+
+# Persistent Mount after reboot  /etc/fstab format
+
+# cloudgeeks.ca   /root/s3       fuse.s3fs _netdev,allow_other,use_path_request_style 0 0
+echo ""$bucket_name" "$mount_point" fuse.s3fs _netdev,allow_other,use_path_request_style,passwd_file=${HOME}/.passwd-s3fs  0 0" >> /etc/fstab
+
+
+
+#DEBUG -o dbglevel=info -f -o curldbg
+#PATH  -o url="https://s3.us-east-1.amazonaws.com"
+# cat /etc/fuse.conf
+
+#END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Dependency Installed:
+
+yum install automake fuse fuse-devel gcc-c++ git libcurl-devel libxml2-devel make openssl-devel -y
+
+
+s3fs-fuse Location: git clone https://github.com/s3fs-fuse/s3fs-fuse
+
+cd  s3fs-fuse
+
+./autogen.sh
+
+./configure --prefix=/usr --with-openssl
+
+
+make
+
+make install
+
+which s3fs
+/bin/s3fs
+
+vim /etc/passwd-s3fs   
+
+accesskey:secret
+
+# For the security of /etc/passwd-s3fs   ---> file change the permissions of it.
+
+chmod 640 /etc/passwd-s3fs
+
+s3fs s3_bucket_name -o use_cache=/temp -o allow_other -o uid=1001 -o mp_umask=002 -o multireq_max=5 /directory_name
+
+#For make it persistent
+
+which s3fs
+/bin/s3fs
+
+vim /etc/rc.local
+
+/bin/s3fs s3_bucket_name -o use_cache=/temp -o allow_other -o uid=1001 -o mp_umask=002 -o multireq_max=5 /directory_name
+
+
+
+
+https://dev-notes.eu/2015/10/backup-rsync-between-devices/
+
+https://linuxhint.com/run_cron_job_every_minute/
+
+### END ###
+
+#Note: Instead of mounting I recommend use the VPC Gateway for S3# all is internal network of AWS, with out using Internet.
+
+# https://github.com/s3fs-fuse/s3fs-fuse
+# https://medium.com/@onclouds/mount-an-s3-bucket-using-fuse-s3fs-a56e34d26f46
+# https://github.com/panubo/docker-s3fs
+
+
+
+
+
+# Windows S3 MOUNT
+-------------------
+
+### Rule ### ---> Do not create empty folders in s3 or windows, it will not work
+
+
+1. Download ---> Winfsp  ---> Windows Mount as Drive ---> https://github.com/billziss-gh/winfsp/releases
+
+2a. Rclone  ---> Rclone ---> OpenSource Cli tools for almost all cloud storages ---> https://rclone.org/downloads/
+
+2b. GIT Bash ---> https://git-scm.com/downloads
+
+3. Create s3 bucket
+
+#######################################################################################################
+4. mkdir /c/rclone
+
+cd /c/rclone && curl -# -LO https://downloads.rclone.org/v1.53.3/rclone-v1.53.3-windows-amd64.zip
+
+unzip rclone-v1.53.3-windows-amd64.zip
+
+cd rclone-v1.53.3-windows-amd64
+
+./rclone.exe config
+
+./rclone  mount cloudgeeks-ca:/ S: --vfs-cache-mode full -vv
+
+#########################################################################################################
+
+# Above We have performed this mention below steps via GitBash
+---------------------------------------------------------------
+
+---> echo "C:\rclone\rclone.exe mount cloudgeeks-ca:/ S: --vfs-cache-mode full" > rclone-S3.cmd
+
+---> cp /c/rclone/rclone-S3.cmd  /c/ProgramData/Microsoft/Windows/Start\ Menu/Programs/StartUp/rclone-S3.cmd
+
+# How to automate mounting an S3 bucket on Windows boot
+
+# It is convenient when the bucket is mounted as a network drive automatically on Windows boot. Let’s find out how to configure automatic mounting of the S3 bucket in Windows.
+
+# Create the rclone-S3.cmd file in the C:\rclone\ directory.
+
+# Add the string to the rclone-S3.cmd file:
+
+C:\rclone\rclone.exe mount cloudgeeks-ca:/ S: --vfs-cache-mode full
+
+#####################################################################################
+Save the CMD file. You can run this CMD file instead of typing the command to mount the S3 bucket manually.
+
+Copy the rclone-S3.cmd file to the startup folder for all users:
+
+C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp
+
+As an alternative, you can create a shortcut to C:\Windows\System32\cmd.exe and set arguments needed to mount an S3 bucket in the target properties:
+
+C:\Windows\System32\cmd.exe /k cd c:\rclone & rclone mount blog-bucket01:blog-bucket01/ S: --vfs-cache-mode full
+
+
+# S3 Policy
+---------------
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": "arn:aws:s3:::BUCKET-NAME"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject*",
+                "s3:GetObject*",
+                "s3:DeleteObject*"
+            ],
+            "Resource": "arn:aws:s3:::BUCKET-NAME/*"
+        }
+    ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+# https://www.nakivo.com/blog/mount-amazon-s3-as-a-drive-how-to-guide/
+# https://blog.spikeseed.cloud/mount-s3-as-a-disk/
+
+
+
+

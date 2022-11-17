@@ -1,0 +1,104 @@
+# Domain
+# https://strimzi.io/docs/operators/latest/using.html#kafka-bridge-concepts-str
+# https://strimzi.io/blog/2019/11/05/exposing-http-bridge/
+# https://strimzi.io/blog/2020/01/27/deploying-debezium-with-kafkaconnector-resource/
+
+# Stackoverflow
+# https://stackoverflow.com/questions/64970147/how-to-access-kafka-bridge
+
+
+curl -v GET http://kafka.cloudgeeks.ca:8080/healthy
+
+curl -v GET http://kafka.cloudgeeks.ca:8080/ready
+
+
+# Producing messages
+
+curl -X POST \
+  http://kafka.cloudgeeks.ca:8080/topics/my-topic \
+  -H 'content-type: application/vnd.kafka.json.v2+json' \
+  -d '{
+    "records": [
+        {
+            "key": "key-1",
+            "value": "value-1"
+        },
+        {
+            "key": "key-2",
+            "value": "value-2"
+        }
+    ]
+}'
+
+# Cosuming messages
+
+curl -X POST http://kafka.cloudgeeks.ca:8080/consumers/my-group \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "name": "my-consumer",
+    "format": "json",
+    "auto.offset.reset": "earliest",
+    "enable.auto.commit": false
+  }'
+
+
+
+# Subscribing to the topic
+
+curl -X POST http://kafka.cloudgeeks.ca:8080/consumers/my-group/instances/my-consumer/subscription \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "topics": [
+        "my-topic"
+    ]
+}'
+
+
+
+
+# Consuming messages
+
+curl -X GET http://kafka.cloudgeeks.ca:8080/consumers/my-group/instances/my-consumer/records \
+  -H 'accept: application/vnd.kafka.json.v2+json'
+
+
+
+
+# Committing offsets
+
+
+curl -X POST http://kafka.cloudgeeks.ca:8080/consumers/my-group/instances/my-consumer/offsets \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "offsets": [
+        {
+            "topic": "my-topic",
+            "partition": 0,
+            "offset": 2
+        }
+    ]
+}'
+
+
+# Deleting a consumer
+
+curl -X DELETE http://kafka.cloudgeeks.ca:8080/consumers/my-group/instances/my-consumer
+
+
+##############################################################################
+
+
+# Check Topic creation directly in Kafka
+kubectl exec -it cloudgeeks-ca-kafka-kafka-0 -c kafka -n kafka -- bin/kafka-topics.sh --bootstrap-server cloudgeeks-ca-kafka-kafka-bootstrap:9092 --describe
+kubectl exec -it cloudgeeks-ca-kafka-kafka-1 -c kafka -n kafka -- bin/kafka-topics.sh --bootstrap-server cloudgeeks-ca-kafka-kafka-bootstrap:9092 --describe
+kubectl exec -it cloudgeeks-ca-kafka-kafka-2 -c kafka -n kafka -- bin/kafka-topics.sh --bootstrap-server cloudgeeks-ca-kafka-kafka-bootstrap:9092 --describe
+
+# How to view kafka message
+https://stackoverflow.com/questions/44239027/how-to-view-kafka-message
+
+kubectl exec -it cloudgeeks-ca-kafka-kafka-0 -c kafka -n kafka -- bin/kafka-console-consumer.sh --bootstrap-server cloudgeeks-ca-kafka-kafka-bootstrap:9092 --topic  my-topic --from-beginning
+
+
+
+
+  #END

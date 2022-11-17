@@ -1,0 +1,21 @@
+# https://medium.com/@6et/convert-openssh-rsa-key-to-a-pem-file-80753fdbac00
+The solution was to create a RSA private key using the command
+ssh-keygen -p -m PEM -f ~/.ssh/id_rsa
+
+# Example
+ssh-keygen -p -m PEM -f monitoring
+
+# https://serverfault.com/questions/706336/how-to-get-a-pem-file-from-ssh-key-pair
+
+# This will convert your public key to an OpenSSL compatible format. Your private key is already in PEM format and can be used as is (as Michael Hampton stated).
+Double check if AWS isn't asking for a (X.509) certificate in PEM format, which would be a different thing than your SSH keys.
+
+# Example
+ssh-keygen -f id_rsa -e -m pem
+
+# Complete Steps
+----------------
+ssh-keygen -f rabbitmq
+ssh-keygen -f rabbitmq -e -m pem
+mv rabbitmq rabbitq.pem
+

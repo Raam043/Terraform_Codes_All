@@ -1,0 +1,132 @@
+# https://www.kasmweb.com/workspace_images.html
+
+# https://hub.docker.com/r/kasmweb/core-ubuntu-bionic?__hstc=50686966.54d5f0769915d5bdbe2878880262b21f.1636525288956.1636525288956.1636525288956.1&__hssc=50686966.1.1636525288959&__hsfp=3968550890&hsCtaTracking=5b5de6c7-515a-46b2-a291-88142384c2a6%7C23e7ba96-2797-4cd6-89c9-b97da7acf31b
+
+# https://tomgregory.com/running-docker-in-docker-on-windows/
+
+
+# Audio ---> https://github.com/kasmtech/KasmVNC/issues/31
+
+# https://kasmweb.com/docs/latest/how_to/reverse_proxy.html
+
+# https://tech.davidfield.co.uk/looking-at-kasm-again/
+
+#########################################
+# Run this command in Windows Powershell
+#########################################
+
+################################
+# Full Desktop with Application
+################################
+
+docker run --name kasmweb-desktop --shm-size=2048m -p 6901:6901 -e VNC_PW=password -id kasmweb/desktop:1.10.0-rolling
+
+##################
+# DevOps Packages
+##################
+
+https://github.com/quickbooks2018/eks-redmin/blob/master/packages.sh
+
+
+########
+# Chrome   # Only Chrome
+#########
+docker run --name kasmweb-chrome -u root --shm-size=2048m -p 6901:6901 -e VNC_PW=password -id kasmweb/chrome:1.9.0-rolling
+
+###########
+# Mounting
+###########
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v "c:/users/Muhammad Asim/Desktop/ubuntu:/root" -p 6901:6901 -e VNC_PW=password -id kasmweb/ubuntu-bionic-desktop:1.9.0
+
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v "c:/users/Muhammad Asim/Desktop/ubuntu:/root" -p 6901:6901 -e VNC_PW=password -id quickbooks2018/kasm-desktop:1.10.0
+
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v /root/ubuntu:/root -p 6901:6901 -e VNC_PW=password -id kasmweb/ubuntu-bionic-desktop:1.9.0
+
+#########################################################################################################################################################################
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v /root/ubuntu:/root -p 4901:4901 -p 6901:6901 -e VNC_PW=password -id quickbooks2018/kasmweb-ubuntu-bionic-desktop:1.9.0
+#########################################################################################################################################################################
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v "c:/users/Muhammad Asim/Desktop/container:/root" -p 6901:6901 -e VNC_PW=password -id quickbooks2018/kasmweb-ubuntu-bionic-desktop:1.9.0
+###################################################################################################################################################################################################################
+
+########
+# Light
+########
+# Linux
+#########
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v /root/ubuntu:/root -p 4901:4901 -p 6901:6901 -e VNC_PW=password -id quickbooks2018/kasm-desktop:1.10.0
+
+##########
+# Windows
+##########
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v "c:/users/Muhammad Asim/Desktop/container:/root" -p 6901:6901 -e VNC_PW=password -id quickbooks2018/kasm-desktop:1.10.0
+
+docker run --name kasmweb-desktop--shm-size=2048m  -p 6901:6901 -e VNC_PW=password -id kasmweb/desktop:1.10.0
+
+
+######################
+# Docker Socket Mount
+#####################
+#########
+# Linux
+#########
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v $(which docker):/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock -v /root/ubuntu:/root -p 4901:4901 -p 6901:6901 -e VNC_PW=password -id quickbooks2018/kasm-desktop:1.10.0
+
+docker run --name kasmweb-desktop -u root  -v $(which docker):/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock -v /root/ubuntu:/root -p 443:6901 -e VNC_PW=password -id quickbooks2018/kasm-desktop:1.10.0
+#########
+# Windows
+#########
+docker run --name kasmweb-desktop -u root --shm-size=2048m -v "//var/run/docker.sock:/var/run/docker.sock" -v "c:/users/Muhammad Asim/Desktop/container:/root" -p 6901:6901 -e VNC_PW=password -id quickbooks2018/kasm-desktop:1.10.0
+
+or
+
+--------------------------------------------------------------------------------------------------
+docker run --name aws-ecr -v "//var/run/docker.sock:/var/run/docker.sock" -w /root -id python:slim
+---------------------------------------------------------------------------------------------------
+
+docker exec -it aws-ecr bash
+
+apt update -y \
+&& apt install -y jq curl unzip sudo docker.io \
+&& curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+&& unzip awscliv2.zip \
+&& sudo ./aws/install \
+&& rm -rf *
+
+
+----------------------------------------------------------------------------------------------
+########################
+# do not use docker image
+#########################
+docker run --name aws-ecr -v "//var/run/docker.sock:/var/run/docker.sock" -id docker:slim
+docker exec -it aws-ecr bash
+apk add bash sudo curl
+apk add --no-cache \
+        python3 \
+        py3-pip \
+    && pip3 install --upgrade pip \
+    && pip3 install --no-cache-dir \
+        awscli \
+    && rm -rf /var/cache/apk/*
+# apk does not support awscliv2
+---------------------------------------------------------------------------------------------------
+#############################
+# Install docker in container
+##############################
+apt search docker
+apt install -y docker.io
+##############################
+
+
+https://localhost:6901/
+
+
+su --> to become root
+
+
+User : kasm_user
+Password: password
+
+############################
+# Linux packages on Windows
+############################
+docker run --name kubernetes --network host -w /root -v "c:/users/Muhammad Asim/Desktop/kubernetes:/root" -id python:slim

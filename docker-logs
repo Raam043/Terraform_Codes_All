@@ -1,0 +1,61 @@
+# https://www.youtube.com/watch?v=pDQzadfUfpE
+
+# ansible
+# https://docs.ansible.com/ansible/2.5/modules/docker_container_module.html
+
+docker does not limit the file size for logging, over time this will become massive example 100GB ---> docker automated way to enable log rotation for docker containers 
+
+docker run --name nginx --log-driver json-file --log-opt max-size=20m --log-opt max-file=10 -id nginx:latest
+
+-------------------------------------------------------------------------------------------------
+# For existing container restart docker & restart containers it will not work, recreate required
+-------------------------------------------------------------------------------------------------
+example:
+docker run --name nginx -id nginx:latest
+
+cat << EOF > /etc/docker/daemon.json
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "1024m",
+    "max-file": "50"
+  }
+}
+
+EOF
+
+systemctl restart docker
+
+docker restart nginx
+
+docker rm -f nginx
+
+docker run --name nginx -id nginx:latest
+
+## https://github.com/docker/cli/issues/1148#issuecomment-645990725
+
+
+
+# https://hub.docker.com/r/linkyard/logrotate
+
+Simply mount a directory with your logs into the container at /logs and optionally configure some logrotation features with the following environment variables:
+
+LOGROTATE_FILE_PATTERN (default: *.log): File pattern within the /logs directory for logs to be rotated by logrotate
+
+LOGROTATE_TRUNCATE (default: copytruncate): Truncation behaviour of logrotate, use either copytruncate or nocopytruncate
+
+LOGROTATE_COMPRESS (default: nocompress): Compression behaviour for rotated files, use either nocompress or compress
+
+LOGROTATE_ROTATE (default: 5): The rotate option of logrotate
+
+LOGROTATE_SIZE (default 50M): the size option of logrotate
+
+
+docker run \
+  -v /path/to/my/logs:/logs \
+  -e LOGROTATE_FILE_PATTERN="*.log" \
+  # don't rotate at all but truncate logs when they exceed the configured rotation size
+  -e LOGROTATE_ROTATE="0" \
+  # run logrotate every 5 minutes
+  -e LOGROTATE_CRON="*/5 0 0 0 0" \
+  linkyard:logrotate

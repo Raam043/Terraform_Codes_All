@@ -1,0 +1,25 @@
+#Use this script to create the Athena table for VPC Flow Logs:
+
+CREATE EXTERNAL TABLE IF NOT EXISTS vpc_flow_logs ( version int, account string, interfaceid string, sourceaddress string, destinationaddress string, sourceport int, destinationport int, protocol int, numpackets int, numbytes bigint, starttime int, endtime int, action string, logstatus string )
+PARTITIONED BY (dt string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ' ' LOCATION 's3://your_log_bucket/prefix/AWSLogs/{subscribe_account_id}/vpcflowlogs/{region_code}/' TBLPROPERTIES ("skip.header.line.count"="1");
+
+#And use this script to account for the table partitions:
+
+ALTER TABLE vpc_flow_logs ADD PARTITION (dt='YYYY-MM-dd') location 's3://your_log_bucket/prefix/AWSLogs/{account_id}/vpcflowlogs/{region_code}/YYYY/MM/dd';
+
+
+#Note
+#Remove the prefix
+
+
+#Example 
+STEP-1
+
+CREATE EXTERNAL TABLE IF NOT EXISTS vpc_flow_logs ( version int, account string, interfaceid string, sourceaddress string, destinationaddress string, sourceport int, destinationport int, protocol int, numpackets int, numbytes bigint, starttime int, endtime int, action string, logstatus string )
+PARTITIONED BY (dt string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ' ' LOCATION 's3://vpc-flow-logs-asim-arain/AWSLogs/673745689210/vpcflowlogs/us-east-1/' TBLPROPERTIES ("skip.header.line.count"="1");
+
+STEP-2
+ALTER TABLE vpc_flow_logs ADD PARTITION (dt='2019-08-31') location 's3://vpc-flow-logs-asim-arain/AWSLogs/673745689210/vpcflowlogs/us-east-1/2019/08/31';
+
+STEP-3
+select * from vpc_flow_logs

@@ -1,0 +1,66 @@
+How to Run Shell Script as SystemD Service in Linux
+Written by Rahul, Updated on April 12, 2021
+Systemd is a software application that provides an array of system components for Linux operating systems. It is the first service to initialize the boot sequence. This always runs with pid 1. This also helps use to manage system and application service on our Linux operating system.
+
+We can also run any custom script as systemd service. It helps the script to start on system boot. This can be helpful for you to run any script which required to run at boot time only or to run always.
+
+In our previous tutorial we have provides you instructions to run a Python script using Systemd. This tutorial coverts to run a shell script as Systemd service.
+
+Step 1 – Create a Shell Script
+First of all, create a sample shell script to run always until the system is running.
+
+sudo vi /usr/bin/script.sh 
+
+
+Add the following sample script.
+
+
+
+
+#!/bin/bash
+ 
+while true
+do
+ // Your statements here
+ sleep 10
+done
+
+
+
+
+
+Save script and set execute permission.
+
+sudo chmod +x /usr/bin/script.sh 
+To run a script once during system boot time doesn’t required any infinite loop. Instead of the above script, you can use your shell script to run as Systemd service.
+
+Step 2 – Create A SystemD File
+Next, create a service file for the systemd on your system. This file must have .service extension and saved under the under /lib/systemd/system/ directory
+
+sudo vi /lib/systemd/system/shellscript.service 
+Now, add the following content and update the script filename and location. You can also change the description of the service.
+
+[Unit]
+Description=My Shell Script
+
+[Service]
+ExecStart=/usr/bin/script.sh
+
+[Install]
+WantedBy=multi-user.target
+Step 3 – Enable New Service
+Your system service has been added to your service. Let’s reload the systemctl daemon to read new file. You need to reload this deamon each time after making any changes in in .service file.
+
+sudo systemctl daemon-reload 
+Now enable the service to start on system boot, also start the service using the following commands.
+
+sudo systemctl enable shellscript.service 
+sudo systemctl start shellscript.service 
+Finally verify the script is up and running as a systemd service.
+
+sudo systemctl status shellscript.service 
+Output looks like below:
+
+Running shell script as systemd service
+
+Conclusion

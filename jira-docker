@@ -1,0 +1,100 @@
+############
+# official
+############
+# https://github.com/cptactionhank/docker-atlassian-jira
+
+# https://cptactionhank.github.io/docker-atlassian-jira/
+
+##########################################################
+
+
+##############
+# External DB
+###############
+# https://jira.atlassian.com/browse/JRASERVER-70071
+
+docker run -v jiraVolume:/var/atlassian/application-data/jira --name="jira" -d -p 8080:8080 -e "ATL_JDBC_URL=jdbc:mysql://192.168.1.0:3306/jiradb" -e "ATL_JDBC_USER=username" -e "ATL_JDBC_PASSWORD=password" -e "ATL_DB_DRIVER=com.mysql.jdbc.Driver" -e "ATL_DB_TYPE=mysql" atlassian/jira-software:8.4.2
+
+# https://confluence.atlassian.com/adminjiraserver/connecting-jira-applications-to-mysql-5-7-966063305.html#ConnectingJiraapplicationstoMySQL5.7-configuringmysql
+
+
+
+##########
+# BuiltIN           # Simply use this
+##########
+
+
+
+# https://github.com/teamatldocker/jira
+
+# https://hub.docker.com/r/cptactionhank/atlassian-jira/
+
+# https://github.com/EugenMayer/docker-image-atlassian-jira/blob/master/docker-compose.yml
+
+  # ENVIRONMET_VARIABLE_NAME: "environment variable value"
+      X_PROXY_NAME: "jira.cloudgeeks.ca"
+      X_PROXY_PORT: "443"
+      X_PROXY_SCHEME: "https"
+      X_PROXY_SECURE: "false"
+
+
+##########
+# Use this
+###########
+
+###############
+# Named Volumes
+################
+
+docker volume create jira
+
+##########
+# Network
+##########
+
+docker network create atlassian
+
+docker run --name jira -p 8000:8080 --network  atlassian -v jira:/var/atlassian/jira --restart unless-stopped  --env X_PROXY_NAME="jira.cloudgeeks-ca" --env X_PROXY_PORT="443" --env X_PROXY_SCHEME="https" --env X_PROXY_SECURE="true" -d cptactionhank/atlassian-jira:latest
+
+
+
+########
+# Nginx
+########
+
+
+server {
+  listen 80;
+  server_name jira.cloudgeeks.ca;
+  return 301 $scheme://jira.cloudgeeks.ca$request_uri;
+}
+server {
+  server_name jira.cloudgeeks.ca;
+   listen 443 ssl;
+   ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+   ssl_certificate_key /etc/ssl/certs/nginx-selfsigned.key;
+
+     ssl_protocols       TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+     ssl_ciphers    TLS-CHACHA20-POLY1305-SHA256:TLS-AES-256-GCM-SHA384:TLS-AES-128-GCM-SHA256:HIGH:!aNULL:!MD5;
+location / {
+    proxy_set_header        Host $host:$server_port;
+    proxy_set_header        X-Real-IP $remote_addr;
+    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header        X-Forwarded-Proto $scheme;
+    proxy_redirect http:// https://;
+    proxy_pass              http://jira:8000;
+    # Required for new HTTP-based CLI
+    proxy_http_version 1.1;
+    proxy_request_buffering off;
+       }
+}
+
+########
+# Nginx
+########
+
+docker run --name nginx --network=atlassian --restart unless-stopped -v ~/ssl/certs:/etc/ssl/certs -v ~/nginx/conf.d:/etc/nginx/conf.d -p 443:443 -p 80:80 -id nginx:latest
+
+
+
+

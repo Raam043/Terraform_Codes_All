@@ -1,0 +1,17 @@
+import json
+from botocore.vendored import requests
+
+def lambda_handler(event, context):
+    URL = "https://circleci.com/api/v1.1/project/github/quickbooks2018/learning/tree/master"
+    API_KEY = "6dad0147210a747e7ef0df8baf41fb06c65ae776"
+    headers = {'x-api-key': API_KEY}
+
+    data = {'build_parameters[CIRCLE_JOB]': 'deploy_docker'}
+
+    r = requests.post(URL, headers=headers, data=data, auth=(API_KEY, ''))
+  
+    return {
+        'statusCode': r.status_code,
+        'body': json.dumps(r.json())
+    }
+
