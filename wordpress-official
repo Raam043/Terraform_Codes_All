@@ -14,7 +14,7 @@ docker volume create wordpress
 
 # Mysql Setup
 # https://hub.docker.com/_/mysql
-docker run --name mysql -e MYSQL_DATABASE=mydb -e MYSQL_ROOT_PASSWORD="ausdermoitoeuropas"  -e MYSQL_USER="asim" -e MYSQL_PASSWORD="asimarain" -v mysql:/var/lib/mysql --network="wordpress" --restart unless-stopped -id mysql:5.7
+docker run --name mysql -e MYSQL_DATABASE=mydb -e MYSQL_ROOT_PASSWORD="ramesh123"  -e MYSQL_USER="admin" -e MYSQL_PASSWORD="admin123" -v mysql:/var/lib/mysql --network="wordpress" --restart unless-stopped -id mysql:5.7
 
 # Phpmyadmin Setup
 # https://hub.docker.com/_/phpmyadmin?tab=description
@@ -24,7 +24,7 @@ docker run --name phpmyadmin --network="wordpress" --link mysql:db -id -p 8080:8
 # Wordpress Setup
 # https://hub.docker.com/_/wordpress
 
-docker run --name wordpress --network="wordpress" -e WORDPRESS_DB_NAME="mydb" -e WORDPRESS_DB_USER="asim" -e WORDPRESS_DB_PASSWORD="asimarain" -e WORDPRESS_DB_HOST="mysql" -p 80:80 -v wordpress:/var/www/html --restart unless-stopped -id wordpress:latest
+docker run --name wordpress --network="wordpress" -e WORDPRESS_DB_NAME="mydb" -e WORDPRESS_DB_USER="admin" -e WORDPRESS_DB_PASSWORD="admin123" -e WORDPRESS_DB_HOST="mysql" -p 80:80 -v wordpress:/var/www/html --restart unless-stopped -id wordpress:latest
 
 
 # \\END
