@@ -1,6 +1,6 @@
 #!/bin/bash
 # Purpose: Wordpress setup in 1 minute with docker
-# Maintainer: <quickbooks2018@gmail.com> Ramesh N
+# Maintainer: <raam043@gmail.com> Ramesh N
 
 
 # Create a network
