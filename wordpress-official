@@ -27,4 +27,4 @@ docker run --name phpmyadmin --network="wordpress" --link mysql:db -id -p 8080:8
 docker run --name wordpress --network="wordpress" -e WORDPRESS_DB_NAME="mydb" -e WORDPRESS_DB_USER="asim" -e WORDPRESS_DB_PASSWORD="asimarain" -e WORDPRESS_DB_HOST="mysql" -p 80:80 -v wordpress:/var/www/html --restart unless-stopped -id wordpress:latest
 
 
-# END
+# \\END
